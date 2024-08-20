@@ -3,18 +3,19 @@
 
 #include "../deps/array_template/array_template.h"
 
-#include <stdlib.h>
-#include <stdint.h>
+#include <stdatomic.h>
+#include <sys/poll.h>
+#include <sys/cdefs.h>
 
-struct client_info {
-  int socket;
-  uint8_t flags;
-};
+__BEGIN_DECLS
 
-generate_array_template(client_info, struct client_info)
+generate_array_template(pollfd, struct pollfd)
 
 struct client_list {
-  client_info_array clients;
+  pollfd_array fds;
+  atomic_bool modified;
 };
+
+__END_DECLS
 
 #endif
