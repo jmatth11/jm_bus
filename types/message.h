@@ -1,14 +1,13 @@
 #ifndef JM_BUS_MESSAGE_H
 #define JM_BUS_MESSAGE_H
 
-#include "../deps/array_template/array_template.h"
+#include "types/array_types.h"
 
 #include <stdint.h>
 #include <sys/cdefs.h>
 
 __BEGIN_DECLS
 
-generate_array_template(byte, uint8_t)
 
 enum message_type {
   ERROR = 0,
@@ -22,6 +21,8 @@ struct message {
   byte_array body;
   uint8_t type;
 };
+
+generate_array_template(message, struct message)
 
 __END_DECLS
 

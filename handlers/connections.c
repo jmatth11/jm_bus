@@ -2,14 +2,19 @@
 
 #include "connections.h"
 #include "client_handler.h"
+#include "handlers/messages.h"
+#include "states.h"
+#include "structures/thread_pool.h"
+#include "types/message.h"
 #include "types/state.h"
+#include "types/array_types.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
-
-generate_array_template(int, int)
 
 void* accept_messages(void *ctx) {
   struct server_state *state = (struct server_state*)ctx;
@@ -18,8 +23,8 @@ void* accept_messages(void *ctx) {
     fprintf(stdout, "adding client %d\n", client_sock);
     // TODO send acceptance packet
     send(client_sock, "T", 1, 0);
-    if (!client_list_add(&state->clients, client_sock)) {
-      fprintf(stderr, "client failed to be added: %d\n", client_sock);
+    if (!server_state_add_client(state, client_sock)) {
+      fprintf(stderr, "server state add client failed.\n");
     }
   } else {
     fprintf(stderr, "socket accept failed: %s\n", strerror(errno));
@@ -31,7 +36,6 @@ void* process_messages(void *ctx) {
   struct server_state *state = (struct server_state*)ctx;
   int_array marked;
   init_int_array(&marked, 10);
-  char recv_msg[512];
   for (int i = 0; i < state->clients.fds.len; ++i) {
       struct pollfd local_c;
       // set the client connections to the read listener.
@@ -44,16 +48,13 @@ void* process_messages(void *ctx) {
           }
         } else {
           if (local_c.revents & POLLIN) {
-            int n = recv(local_c.fd, recv_msg, 512, 0);
-            if (n == 0) {
+            message_array msgs = message_array_generate_from_client(local_c.fd);
+            if (msgs.len == 0) {
               fprintf(stdout, "client %d disconnected with 0 recv\n", local_c.fd);
-              close(local_c.fd);
               insert_int_array(&marked, i);
             }
-            send(local_c.fd, recv_msg, n, 0);
           } else if (local_c.revents & (POLLHUP | POLLERR)) {
               fprintf(stdout, "client %d disconnected\n", local_c.fd);
-              close(local_c.fd);
               insert_int_array(&marked, i);
           }
         }
@@ -61,7 +62,27 @@ void* process_messages(void *ctx) {
   }
   // remove the marked clients.
   for (int marked_idx = 0; marked_idx < marked.len; ++marked_idx) {
-    client_list_remove_by_idx(&state->clients, marked.int_data[marked_idx]);
+    server_state_remove_clients(state, marked);
   }
   return NULL;
+}
+
+void* send_messages(void *ctx) {
+  struct thread_job *job = (struct thread_job*)ctx;
+  bool running = true;
+  while (running) {
+    struct pollfd fd = {
+      .fd = job->pipe_fd[thread_job_pipe_read],
+      .events = POLLIN,
+      .revents = 0,
+    };
+    poll(&fd, 1, -1);
+    message_array msgs = message_array_generate_from_client(fd.fd);
+    if (msgs.len == 0) {
+      fprintf(stdout, "thread %d closing\n", fd.fd);
+      running = false;
+    }
+    // TODO send messages out to clients
+  }
+  return job;
 }

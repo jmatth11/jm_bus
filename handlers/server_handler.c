@@ -1,11 +1,12 @@
 #include "server_handler.h"
+#include "types/server.h"
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-
 
 bool server_handler_init(struct server_info *si, int __type, int __protocol) {
   si->socket = socket(si->addr.sin_family, __type, __protocol);
@@ -51,4 +52,5 @@ bool server_handler_bind_and_listen(struct server_info *si) {
 
 void server_handler_close(struct server_info *si) {
   shutdown(si->socket, SHUT_RDWR);
+  close(si->socket);
 }

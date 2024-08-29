@@ -1,15 +1,15 @@
 #include "bytes.h"
 #include <stdio.h>
 
-void convert_64bit_to_utf8(size_t n, uint8_t *out) {
-  for (int i = 0; i < 5; ++i) {
-    out[i] = (uint8_t)(n>>(i*8));
+void convert_64bit_to_n_utf8(size_t val, size_t n, uint8_t *out) {
+  for (int i = 0; i < n; ++i) {
+    out[i] = (uint8_t)(val>>(i*8));
   }
 }
 
-void convert_utf8_to_64bit(uint8_t *buf, size_t *out) {
+void convert_n_utf8_to_64bit(uint8_t *buf, size_t n, size_t *out) {
   size_t local = 0;
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < n; ++i) {
     local += buf[i]<<(i*8);
   }
   *out = local;

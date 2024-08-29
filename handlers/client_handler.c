@@ -33,6 +33,13 @@ bool client_list_remove(struct client_list *cl, int client_socket) {
       break;
     }
   }
+  int gap_size = cl->fds.cap - cl->fds.len;
+  if (gap_size > 100) {
+    // cut gap size in half to reclaim memory
+    if (!array_resize(&cl->fds, (gap_size/2))) {
+      return false;
+    }
+  }
   return result;
 }
 
@@ -57,6 +64,14 @@ bool client_list_get(struct client_list *cl, int client_socket, struct pollfd *f
 bool client_list_get_by_idx(struct client_list *cl, int idx, struct pollfd *fd) {
   if (idx >= cl->fds.len) return false;
   *fd = cl->fds.pollfd_data[idx];
+  return true;
+}
+
+bool client_list_close_connections(struct client_list *cl) {
+  for (int i = 0; i < cl->fds.len; ++i) {
+    struct pollfd *client = &cl->fds.pollfd_data[i];
+    close(client->fd);
+  }
   return true;
 }
 

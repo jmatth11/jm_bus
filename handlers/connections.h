@@ -5,8 +5,10 @@
 
 __BEGIN_DECLS
 
-void* accept_messages(void *ctx) __THROWNL;
-void* process_messages(void *ctx) __THROWNL;
+void* accept_messages(void *ctx) __THROWNL __nonnull((1));
+void* process_messages(void *ctx) __THROWNL __nonnull((1));
+
+void* send_messages(void *ctx) __THROWNL __nonnull((1));
 
 __END_DECLS
 

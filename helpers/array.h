@@ -19,6 +19,14 @@ __BEGIN_DECLS
  */
 bool array_remove_item(pollfd_array *fds, size_t idx) __THROWNL __nonnull((1));
 
+/**
+ * Resize the array to the given size.
+ * @param[in] fds The file descriptor array.
+ * @param[in] n The new size.
+ * @return True if successful, false otherwise.
+ */
+bool array_resize(pollfd_array *fds, size_t n) __THROWNL __nonnull((1));
+
 __END_DECLS
 
 #endif
