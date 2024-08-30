@@ -2,6 +2,7 @@
 
 #include "thread_pool.h"
 
+#include <pthread.h>
 #include <stdio.h>
 #include <sys/poll.h>
 #include <unistd.h>
@@ -31,13 +32,14 @@ struct thread_pool* thread_pool_create(size_t n) {
   return pool;
 }
 
-bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, void *ctx, size_t n) {
+bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, void *ctx) {
   bool found = false;
   for (int i = 0; i < pool->threads.len; ++i) {
     struct thread_job *job = &pool->threads.thread_job_data[i];
     if (atomic_compare_exchange_strong(&job->occupied, &found, true)) {
       found = true;
-      write(job->pipe_fd[thread_job_pipe_write], ctx, n);
+      job->ctx = ctx;
+      pthread_cond_signal(&job->cond);
       break;
     }
   }
@@ -47,9 +49,21 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, void 
     atomic_store(&local.occupied, true);
     insert_thread_job_array(&pool->threads, local);
     struct thread_job *ref = &pool->threads.thread_job_data[pool->threads.len -1];
-    pipe(ref->pipe_fd);
-    pthread_create(&ref->thread_fd, NULL, callback, ref);
+    if (pthread_cond_init(&ref->cond, NULL) != 0) {
+      fprintf(stderr, "pthread condition init failed.\n");
+      return false;
+    }
+    if (pthread_mutex_init(&ref->mutex, NULL) != 0) {
+      fprintf(stderr, "pthread mutex init failed.\n");
+      return false;
+    }
+    if (pthread_create(&ref->thread_fd, NULL, callback, ref) != 0) {
+      fprintf(stderr, "pthread create failed.\n");
+      return false;
+    }
     pthread_mutex_unlock(&pool->lock);
+    // signal to the thread to unblock
+    pthread_cond_signal(&ref->cond);
   }
   return true;
 }

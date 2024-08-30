@@ -8,6 +8,7 @@
 #include "types/message.h"
 #include "types/state.h"
 #include "types/array_types.h"
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,18 +72,16 @@ void* send_messages(void *ctx) {
   struct thread_job *job = (struct thread_job*)ctx;
   bool running = true;
   while (running) {
-    struct pollfd fd = {
-      .fd = job->pipe_fd[thread_job_pipe_read],
-      .events = POLLIN,
-      .revents = 0,
-    };
-    poll(&fd, 1, -1);
-    message_array msgs = message_array_generate_from_client(fd.fd);
-    if (msgs.len == 0) {
-      fprintf(stdout, "thread %d closing\n", fd.fd);
-      running = false;
+    pthread_mutex_lock(&job->mutex);
+
+    if (pthread_cond_wait(&job->cond, &job->mutex) != 0) {
+      fprintf(stderr, "pthread conditional wait failed.\n");
+      continue;
     }
+
     // TODO send messages out to clients
+
+    pthread_mutex_unlock(&job->mutex);
   }
   return job;
 }
