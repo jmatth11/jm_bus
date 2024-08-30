@@ -49,6 +49,7 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, void 
     atomic_store(&local.occupied, true);
     insert_thread_job_array(&pool->threads, local);
     struct thread_job *ref = &pool->threads.thread_job_data[pool->threads.len -1];
+    ref->ctx = ctx;
     if (pthread_cond_init(&ref->cond, NULL) != 0) {
       fprintf(stderr, "pthread condition init failed.\n");
       return false;
