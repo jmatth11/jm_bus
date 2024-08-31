@@ -2,6 +2,7 @@
 
 #include "hash_map.h"
 #include "helpers/strings.h"
+#include "types/array_types.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,7 @@
 
 struct hash_map_entry {
   char *key;
-  int value;
+  int_array value;
 };
 
 generate_array_template(map_entry, struct hash_map_entry *)
@@ -64,6 +65,7 @@ void hash_map_destroy(struct hash_map *hm) {
         get_map_entry_array(&map_entry, entry_idx, &entry);
         if (entry != NULL) {
           free(entry->key);
+          free_int_array(&entry->value);
           free(entry);
         }
       }
@@ -74,7 +76,7 @@ void hash_map_destroy(struct hash_map *hm) {
   free(hm);
 }
 
-bool hash_map_get(struct hash_map *hm, const char *key, int *out) {
+bool hash_map_get(struct hash_map *hm, const char *key, int_array *out) {
   int hash = hash_from_str(key);
   int idx = fast_mod(hash, hm->entries.cap);
   map_entry_array *row = &hm->entries.map_data[idx];
@@ -97,28 +99,25 @@ bool hash_map_get(struct hash_map *hm, const char *key, int *out) {
 bool hash_map_set(struct hash_map *hm, const char *key, int value) {
   int hash = hash_from_str(key);
   int idx = fast_mod(hash, hm->entries.cap);
+  bool exists = false;
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
     if (!init_map_entry_array(row, 10)) {
       fprintf(stderr, "error init map entry in hash map get.\n");
       return false;
     }
-    struct hash_map_entry *entry = malloc(sizeof(struct hash_map_entry));
-    size_t key_len = strlen(key);
-    entry->key = malloc(sizeof(char) * key_len);
-    strncpy(entry->key, key, key_len);
-    entry->value = value;
-    insert_map_entry_array(row, entry);
-    return true;
-  }
-  bool exists = false;
-  for (int i = 0; i < row->len; ++i) {
-    struct hash_map_entry *existing_entry = NULL;
-    get_map_entry_array(row, i, &existing_entry);
-    if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
-      exists = true;
-      existing_entry->value = value;
-      break;
+  } else {
+    for (int i = 0; i < row->len; ++i) {
+      struct hash_map_entry *existing_entry = NULL;
+      get_map_entry_array(row, i, &existing_entry);
+      if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
+        exists = true;
+        if (!insert_int_array(&existing_entry->value, value)) {
+          fprintf(stderr, "insert value in existing hash map failed.\n");
+          return false;
+        }
+        break;
+      }
     }
   }
   if (!exists) {
@@ -126,8 +125,18 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
     size_t key_len = strlen(key);
     entry->key = malloc(sizeof(char) * key_len);
     strncpy(entry->key, key, key_len);
-    entry->value = value;
-    insert_map_entry_array(row, entry);
+    if (!init_int_array(&entry->value, 3)) {
+      fprintf(stderr, "hash map entry array failed.\n");
+      return false;
+    }
+    if (!insert_int_array(&entry->value, value)) {
+      fprintf(stderr, "insert value in new hash map failed.\n");
+      return false;
+    }
+    if (!insert_map_entry_array(row, entry)) {
+      fprintf(stderr, "inserting new entry in hash map failed.\n");
+      return false;
+    }
   }
   return true;
 }
@@ -146,6 +155,7 @@ bool hash_map_remove(struct hash_map* hm, const char *key) {
     if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
       remove_idx = i;
       free(existing_entry->key);
+      free_int_array(&existing_entry->value);
       free(existing_entry);
       break;
     }

@@ -32,13 +32,13 @@ struct thread_pool* thread_pool_create(size_t n) {
   return pool;
 }
 
-bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, void *ctx) {
+bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struct message_event event) {
   bool found = false;
   for (int i = 0; i < pool->threads.len; ++i) {
     struct thread_job *job = &pool->threads.thread_job_data[i];
     if (atomic_compare_exchange_strong(&job->occupied, &found, true)) {
       found = true;
-      job->ctx = ctx;
+      job->event = event;
       pthread_cond_signal(&job->cond);
       break;
     }
@@ -49,7 +49,7 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, void 
     atomic_store(&local.occupied, true);
     insert_thread_job_array(&pool->threads, local);
     struct thread_job *ref = &pool->threads.thread_job_data[pool->threads.len -1];
-    ref->ctx = ctx;
+    ref->event = event;
     if (pthread_cond_init(&ref->cond, NULL) != 0) {
       fprintf(stderr, "pthread condition init failed.\n");
       return false;
@@ -70,7 +70,17 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, void 
 }
 
 void thread_pool_destroy(struct thread_pool *pool) {
+  pthread_mutex_lock(&pool->lock);
+  for (int i = 0; i < pool->threads.len; ++i) {
+    struct thread_job *job = &pool->threads.thread_job_data[i];
+    job->event.from = -1;
+    pthread_cond_signal(&job->cond);
+    pthread_join(job->thread_fd, NULL);
+    pthread_cond_destroy(&job->cond);
+    pthread_mutex_destroy(&job->mutex);
+  }
   free_thread_job_array(&pool->threads);
+  pthread_mutex_unlock(&pool->lock);
   pthread_mutex_destroy(&pool->lock);
   free(pool);
 }

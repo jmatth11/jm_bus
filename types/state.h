@@ -14,6 +14,7 @@ struct server_state {
   struct client_list clients;
   struct server_info server;
   struct hash_map *topics;
+  struct thread_pool *pool;
   atomic_int action;
   atomic_bool running;
 };

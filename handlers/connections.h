@@ -6,9 +6,9 @@
 __BEGIN_DECLS
 
 void* accept_messages(void *ctx) __THROWNL __nonnull((1));
-void* process_messages(void *ctx) __THROWNL __nonnull((1));
+void* process_poll_events(void *ctx) __THROWNL __nonnull((1));
 
-void* send_messages(void *ctx) __THROWNL __nonnull((1));
+void* process_messages(void *ctx) __THROWNL __nonnull((1));
 
 __END_DECLS
 

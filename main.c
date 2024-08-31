@@ -20,7 +20,7 @@ int main(int argc, const char **argv) {
       exit(2);
     }
     // change function name
-    process_messages(&state);
+    process_poll_events(&state);
   }
   if (!server_state_free(&state)) {
     fprintf(stderr, "server state free failed.\n");

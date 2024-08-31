@@ -8,7 +8,6 @@
 
 __BEGIN_DECLS
 
-
 enum message_type {
   ERROR = 0,
   CONNECTION,
@@ -23,6 +22,14 @@ struct message {
 };
 
 generate_array_template(message, struct message)
+
+struct server_state;
+
+struct message_event {
+  struct server_state* state;
+  int from;
+  message_array msgs;
+};
 
 __END_DECLS
 

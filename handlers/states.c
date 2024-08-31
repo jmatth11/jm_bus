@@ -2,6 +2,7 @@
 #include "client_handler.h"
 #include "server_handler.h"
 #include "structures/hash_map.h"
+#include "structures/thread_pool.h"
 #include "types/state.h"
 #include <stdio.h>
 
@@ -30,7 +31,16 @@ bool server_state_init(struct server_state *s) {
     fprintf(stderr, "hash map create failed.\n");
     return false;
   }
+  s->pool = thread_pool_create(100);
+  if (s->pool == NULL) {
+    fprintf(stderr, "thread pool create failed.\n");
+    return false;
+  }
   return true;
+}
+
+bool server_state_add_client_topic(struct server_state *s, const char *topic, int client_sock) {
+  return hash_map_set(s->topics, topic, client_sock);
 }
 
 bool server_state_add_client(struct server_state *s, int client_sock) {
@@ -80,5 +90,6 @@ bool server_state_free(struct server_state *s) {
   client_list_free(&s->clients);
   server_handler_close(&s->server);
   hash_map_destroy(s->topics);
+  thread_pool_destroy(s->pool);
   return true;
 }

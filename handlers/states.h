@@ -11,6 +11,7 @@ __BEGIN_DECLS
 struct server_state;
 
 bool server_state_init(struct server_state *) __THROWNL __nonnull((1));
+bool server_state_add_client_topic(struct server_state *s, const char *topic, int client_sock) __THROWNL __nonnull((1,2));
 bool server_state_add_client(struct server_state *, int client_sock) __THROWNL __nonnull((1));
 bool server_state_remove_client(struct server_state *, int client_sock) __THROWNL __nonnull((1));
 bool server_state_remove_clients(struct server_state *, int_array client_idxs) __THROWNL __nonnull((1));
