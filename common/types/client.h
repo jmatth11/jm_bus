@@ -14,6 +14,10 @@ struct client_list {
   atomic_bool modified;
 };
 
+struct client {
+  int client_sock;
+};
+
 __END_DECLS
 
 #endif

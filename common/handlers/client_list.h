@@ -1,5 +1,5 @@
-#ifndef JM_BUS_CLIENT_HANDLER_H
-#define JM_BUS_CLIENT_HANDLER_H
+#ifndef JM_BUS_CLIENT_LIST_HANDLER_H
+#define JM_BUS_CLIENT_LIST_HANDLER_H
 
 #include <stdbool.h>
 #include <sys/cdefs.h>

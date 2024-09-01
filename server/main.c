@@ -1,12 +1,12 @@
 #include "handlers/connections.h"
-#include "handlers/states.h"
+#include "handlers/server_states.h"
 #include "types/state.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, const char **argv) {
   struct server_state state;
-  if (!server_state_init(&state)) {
+  if (!server_state_init(&state, NULL)) {
     fprintf(stderr, "server state init failed.\n");
     exit(1);
   }

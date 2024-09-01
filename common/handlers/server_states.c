@@ -1,15 +1,19 @@
-#include "states.h"
-#include "client_handler.h"
-#include "server_handler.h"
+#include "server_states.h"
+#include "client_list.h"
+#include "server.h"
 #include "structures/hash_map.h"
 #include "structures/thread_pool.h"
 #include "types/state.h"
 #include <stdio.h>
 
 
-bool server_state_init(struct server_state *s) {
+bool server_state_init(struct server_state *s, struct sockaddr_in *addr) {
   s->running = true;
-  s->server.addr = server_handler_default_addr();
+  if (addr == NULL) {
+    s->server.addr = server_handler_default_addr();
+  } else {
+    s->server.addr = *addr;
+  }
   if (!server_handler_init(&s->server, SOCK_STREAM, 0)) {
     fprintf(stderr, "server_info failed.\n");
     return false;

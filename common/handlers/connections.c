@@ -1,9 +1,9 @@
 #include "../deps/array_template/array_template.h"
 
-#include "client_handler.h"
+#include "client_list.h"
 #include "connections.h"
 #include "handlers/messages.h"
-#include "states.h"
+#include "server_states.h"
 #include "structures/thread_pool.h"
 #include "types/message.h"
 #include "types/state.h"

@@ -1,4 +1,4 @@
-#include "server_handler.h"
+#include "server.h"
 #include "types/server.h"
 
 #include <errno.h>
@@ -35,6 +35,14 @@ struct sockaddr_in server_handler_default_addr() {
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(9901);
   serv_addr.sin_addr.s_addr = INADDR_ANY;
+  return serv_addr;
+}
+
+struct sockaddr_in server_handler_addr(sa_family_t __type, uint16_t port, int32_t addr) {
+  struct sockaddr_in serv_addr;
+  serv_addr.sin_family = __type;
+  serv_addr.sin_port = port;
+  serv_addr.sin_addr.s_addr = addr;
   return serv_addr;
 }
 
