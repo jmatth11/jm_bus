@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -std=c11
-LIBS=-L../deps/tomlc99/ -lm -l:libtoml.a
+LIBS=-lm -L../common/lib/ -ljm_bus
 INCLUDES=-I./
 OBJ=obj
 BIN=bin
@@ -8,10 +8,10 @@ SOURCES=$(shell find . -name '*.c' -not -path './plugins/*' -not -path './deps/*
 OBJECTS=$(addprefix $(OBJ)/,$(SOURCES:%.c=%.o))
 DEBUG_OBJECTS=$(patsubst %.c, $(OBJ)/%-debug.o, $(SOURCES))
 DEPS=$(shell find . -name Makefile -printf '%h\n' | grep -v 'unittest' | grep -v '^.$$')
-TARGET=jm_bus
+TARGET=jm_bus_client
 
 .PHONY: all
-all: deps src
+all: src
 
 .PHONY: src
 src: $(OBJECTS)
@@ -38,17 +38,4 @@ $(OBJ)/%-debug.o: %.c
 clean:
 	@rm -rf $(OBJ)/* 2> /dev/null
 	@rm -f $(BIN)/* 2> /dev/null
-
-.PHONY: clean_deps
-clean_deps:
-	$(foreach dir, $(DEPS), $(shell cd $(dir) && $(MAKE) clean))
-
-.PHONY: clean_all
-clean_all: clean clean_deps
-
-.PHONY: deps
-deps:
-	@for i in $(DEPS); do\
-		cd $${i} && $(MAKE) && cd -;\
-	done
 
