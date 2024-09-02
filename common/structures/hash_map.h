@@ -16,6 +16,7 @@ void hash_map_destroy(struct hash_map *) __THROWNL __nonnull((1));
 bool hash_map_get(struct hash_map *, const char *, int_array *out) __THROWNL __nonnull((1,2));
 bool hash_map_set(struct hash_map *, const char *, int) __THROWNL __nonnull((1,2));
 bool hash_map_remove(struct hash_map*, const char *) __THROWNL __nonnull((1,2));
+bool hash_map_remove_value(struct hash_map* hm, const char *key, const int value) __THROWNL __nonnull((1,2));
 
 __END_DECLS
 

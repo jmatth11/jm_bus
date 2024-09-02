@@ -1,8 +1,10 @@
 #include "../deps/array_template/array_template.h"
 
 #include "hash_map.h"
+#include "helpers/array.h"
 #include "helpers/strings.h"
 #include "types/array_types.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -162,6 +164,42 @@ bool hash_map_remove(struct hash_map* hm, const char *key) {
   }
   if (remove_idx == -1) return false;
   hash_map_remove_entry(row, remove_idx);
+  return true;
+}
+
+bool hash_map_remove_value(struct hash_map* hm, const char *key, const int value) {
+  printf("DEBUGGING hash_map_remove_value: topic %s, value %d.\n", key, value);
+  int hash = hash_from_str(key);
+  int idx = fast_mod(hash, hm->entries.cap);
+  map_entry_array *row = &hm->entries.map_data[idx];
+  if (row->map_entry_data == NULL) {
+    fprintf(stderr, "key does not exist.\n");
+    return false;
+  }
+  int remove_idx = -1;
+  for (int i = 0; i < row->len; ++i) {
+    struct hash_map_entry *existing_entry = NULL;
+    get_map_entry_array(row, i, &existing_entry);
+    if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
+      for (int entry_idx = 0; entry_idx < existing_entry->value.len; ++entry_idx) {
+        int local_val = existing_entry->value.int_data[entry_idx];
+        printf("ENTRY VAL %d.\n", local_val);
+        if (local_val == value) {
+          remove_idx = entry_idx;
+          break;
+        }
+      }
+      if (remove_idx == -1) {
+        fprintf(stderr, "hash map remove_value idx not found.\n");
+        return false;
+      }
+      if (!array_remove_item(&existing_entry->value, remove_idx)) {
+        fprintf(stderr, "failed to remove int from hash map entry.\n");
+        return false;
+      }
+      break;
+    }
+  }
   return true;
 }
 

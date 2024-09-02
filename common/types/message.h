@@ -10,9 +10,9 @@ __BEGIN_DECLS
 
 enum message_type {
   ERROR = 0,
-  CONNECTION,
-  SUBSCRIBE,
-  PUBLISH,
+  CONNECTION = 1,
+  SUBSCRIBE = 2,
+  PUBLISH = 3,
 };
 
 struct message {

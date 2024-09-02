@@ -15,6 +15,8 @@ generate_array_template(pollfd, struct pollfd)
 
 generate_array_template(byte, uint8_t)
 
+generate_array_template(str, char*)
+
 __END_DECLS
 
 #endif

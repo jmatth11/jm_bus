@@ -37,6 +37,7 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
   for (int i = 0; i < pool->threads.len; ++i) {
     struct thread_job *job = &pool->threads.thread_job_data[i];
     if (atomic_compare_exchange_strong(&job->occupied, &found, true)) {
+      printf("reusing existing thread\n");
       found = true;
       job->event = event;
       pthread_cond_signal(&job->cond);
@@ -58,11 +59,18 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
       fprintf(stderr, "pthread mutex init failed.\n");
       return false;
     }
+    printf("create thread\n");
     if (pthread_create(&ref->thread_fd, NULL, callback, ref) != 0) {
       fprintf(stderr, "pthread create failed.\n");
       return false;
     }
+    // wait for thread to start up.
+    pthread_mutex_lock(&ref->mutex);
+    pthread_cond_wait(&ref->cond, &ref->mutex);
+    pthread_mutex_unlock(&ref->mutex);
+
     pthread_mutex_unlock(&pool->lock);
+    printf("cond signal");
     // signal to the thread to unblock
     pthread_cond_signal(&ref->cond);
   }

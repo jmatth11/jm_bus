@@ -1,14 +1,15 @@
 CC=gcc
 CFLAGS=-Wall -std=c11
-LIBS=-lm -L../common/lib/ -ljm_bus
-INCLUDES=-I./
+LIBS=-lm -L../../common/lib/ -ljm_bus
+LIBS_DEBUG=-lm -L../../common/lib/ -ljm_bus-debug
+INCLUDES=-I./ -I../../common/
 OBJ=obj
 BIN=bin
 SOURCES=$(shell find . -name '*.c' -not -path './plugins/*' -not -path './deps/*')
 OBJECTS=$(addprefix $(OBJ)/,$(SOURCES:%.c=%.o))
 DEBUG_OBJECTS=$(patsubst %.c, $(OBJ)/%-debug.o, $(SOURCES))
 DEPS=$(shell find . -name Makefile -printf '%h\n' | grep -v 'unittest' | grep -v '^.$$')
-TARGET=jm_bus_client
+TARGET=jm_bus_client_pub
 
 .PHONY: all
 all: src
@@ -18,11 +19,11 @@ src: $(OBJECTS)
 	$(CC) $^ -O2 $(CFLAGS) $(LIBS) -o $(BIN)/$(TARGET)
 
 .PHONY: debug
-debug: deps debugsrc
+debug: debugsrc
 
 .PHONY: debugsrc
 debugsrc: $(DEBUG_OBJECTS)
-	$(CC) $^ -ggdb $(CFLAGS) $(LIBS) -o $(BIN)/$(TARGET)
+	$(CC) $^ -ggdb $(CFLAGS) $(LIBS_DEBUG) -o $(BIN)/$(TARGET)
 
 $(OBJ)/%.o: %.c
 	@mkdir -p $(dir $@)

@@ -30,22 +30,6 @@ bool server_handler_init(struct server_info *si, int __type, int __protocol) {
   return true;
 }
 
-struct sockaddr_in server_handler_default_addr() {
-  struct sockaddr_in serv_addr;
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(9901);
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-  return serv_addr;
-}
-
-struct sockaddr_in server_handler_addr(sa_family_t __type, uint16_t port, int32_t addr) {
-  struct sockaddr_in serv_addr;
-  serv_addr.sin_family = __type;
-  serv_addr.sin_port = port;
-  serv_addr.sin_addr.s_addr = addr;
-  return serv_addr;
-}
-
 bool server_handler_bind_and_listen(struct server_info *si) {
   if (bind(si->socket, (struct sockaddr *)&si->addr, sizeof(si->addr)) != 0) {
     fprintf(stderr, "bind failed. Error: %s\n", strerror(errno));
