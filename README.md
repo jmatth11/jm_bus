@@ -43,3 +43,6 @@ This sets up the `LD_LIBRARY_PATH` and runs the program.
 
 Run the `server/` first, then the `client/sub/`, and then the `client/pub/`.
 
+## Demo
+
+https://github.com/user-attachments/assets/d4dc799d-a76d-41d7-b152-09945b17e3f6
