@@ -32,6 +32,7 @@ int main(int argc, const char **argv) {
     fprintf(stderr, "client init byte array failed.\n");
     exit(1);
   }
+  printf("publish to topic \"%s\"\nmessage: \"%s\"\n", "test_topic", msg_str);
   if (!client_publish(&client, "test_topic", msg)) {
     fprintf(stderr, "client publish failed.\n");
     exit(1);

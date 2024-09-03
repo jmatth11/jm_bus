@@ -43,9 +43,10 @@ bool str_to_byte_array(const char *str, byte_array *out) {
 }
 
 char* byte_array_to_str(byte_array *arr) {
-  char *result = malloc(sizeof(char)*arr->len);
+  char *result = malloc(sizeof(char)*arr->len + 1);
   if (result == NULL) return result;
-  memcpy(result, arr->byte_data, arr->len - 1);
+  memcpy(result, arr->byte_data, arr->len);
+  result[arr->len] = '\0';
   return result;
 }
 
