@@ -48,9 +48,19 @@ bool server_state_init(struct server_state *s, struct sockaddr_in *addr) {
 }
 
 bool server_state_add_client_topic(struct server_state *s, const char *topic, int client_sock) {
+  printf("CALLING ADD TOPIC client %d\n", client_sock);
   int idx = client_list_get_idx(&s->clients, client_sock);
+  printf("idx=%d\n", idx);
   struct client_metadata *metadata = &s->clients.metadata.client_metadata_data[idx];
   size_t topic_len = strlen(topic);
+  for (int i = 0; i < metadata->topics.len; ++i) {
+    const char *md_topic = metadata->topics.str_data[i];
+    printf("STRNCMP: md_topic=%s, topic=%s, topic_len=%zu\n", md_topic, topic, topic_len);
+    if (strncmp(md_topic, topic, topic_len) == 0) {
+      fprintf(stderr, "client %d, is already subscribed to topic \"%s\".\n", client_sock, topic);
+      return true;
+    }
+  }
   char *md_topic = malloc(sizeof(char)*topic_len);
   strncpy(md_topic, topic, topic_len);
   if (!insert_str_array(&metadata->topics, md_topic)) {
@@ -85,35 +95,17 @@ bool server_state_remove_client(struct server_state *s, int client_sock) {
   }
   struct client_metadata *metadata = &s->clients.metadata.client_metadata_data[found_idx];
   for (int topic_idx = 0; topic_idx < metadata->topics.len; ++topic_idx) {
-    if (!hash_map_remove_value(s->topics, metadata->topics.str_data[topic_idx], client_sock)) {
+    const char *topic_name = metadata->topics.str_data[topic_idx];
+    printf("handling topic_name \"%s\" for client %d.\n", topic_name, client_sock);
+    if (!hash_map_remove_value(s->topics, topic_name, client_sock)) {
       fprintf(stderr, "remove topics for removed client failed.\n");
       return false;
     }
   }
   close(client_sock);
-  if (!client_list_remove_by_idx(&s->clients, found_idx)) {
+  if (!client_list_remove(&s->clients, client_sock)) {
     fprintf(stderr, "client list remove by idx in server state remove client failed.\n");
     return false;
-  }
-  return true;
-}
-
-bool server_state_remove_clients(struct server_state *s, int_array client_idxs) {
-  for (int idx = 0; idx < client_idxs.len; ++idx) {
-    int remove_idx = client_idxs.int_data[idx];
-    struct pollfd *local_c = &s->clients.fds.pollfd_data[remove_idx];
-    struct client_metadata *metadata = &s->clients.metadata.client_metadata_data[remove_idx];
-    for (int topic_idx = 0; topic_idx < metadata->topics.len; ++topic_idx) {
-      if (!hash_map_remove_value(s->topics, metadata->topics.str_data[topic_idx], local_c->fd)) {
-        fprintf(stderr, "remove topics for removed client failed.\n");
-        return false;
-      }
-    }
-    close(local_c->fd);
-    if (!client_list_remove_by_idx(&s->clients, remove_idx)) {
-      fprintf(stderr, "remove clients with client remove by idx failed.\n");
-      return false;
-    }
   }
   return true;
 }

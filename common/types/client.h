@@ -4,6 +4,7 @@
 #include "types/array_types.h"
 
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdatomic.h>
 #include <sys/poll.h>
 #include <sys/cdefs.h>
@@ -19,7 +20,7 @@ generate_array_template(client_metadata, struct client_metadata);
 struct client_list {
   pollfd_array fds;
   client_metadata_array metadata;
-  atomic_bool modified;
+  pthread_mutex_t mutex;
 };
 
 struct client {

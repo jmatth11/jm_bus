@@ -6,7 +6,9 @@
 #include <stdlib.h>
 
 static bool client_metadata_array_remove(struct client_list *cl, int idx) {
+  printf("before remove metadata.len=%zu.\n", cl->metadata.len);
   bool result = array_remove_item(&cl->metadata, idx);
+  printf("after remove metadata.len=%zu.\n", cl->metadata.len);
   int gap_size = cl->metadata.cap - cl->metadata.len;
   if (gap_size > 100) {
     // cut gap size in half to reclaim memory
@@ -26,10 +28,15 @@ bool client_list_init(struct client_list *cl) {
     fprintf(stderr, "error initializing client metadata.\n");
     return false;
   }
+  if (pthread_mutex_init(&cl->mutex, NULL) < 0) {
+    fprintf(stderr, "error initializing client list mutex.\n");
+    return false;
+  }
   return true;
 }
 
 bool client_list_add(struct client_list *cl, int client_socket) {
+  pthread_mutex_lock(&cl->mutex);
   struct pollfd local_pollfd = {
     .fd = client_socket,
     .events = POLLIN,
@@ -37,40 +44,49 @@ bool client_list_add(struct client_list *cl, int client_socket) {
   };
   if (!insert_pollfd_array(&cl->fds, local_pollfd)) {
     fprintf(stderr, "error added poll file descriptor to array.\n");
+    pthread_mutex_unlock(&cl->mutex);
     return false;
   }
   struct client_metadata metadata;
   if (!client_metadata_init(&metadata)) {
     fprintf(stderr, "error initializing client metadata.\n");
+    pthread_mutex_unlock(&cl->mutex);
     return false;
   }
   if (!insert_client_metadata_array(&cl->metadata, metadata)) {
     fprintf(stderr, "error adding metadata to client list.\n");
+    pthread_mutex_unlock(&cl->mutex);
     return false;
   }
+  pthread_mutex_unlock(&cl->mutex);
   return true;
 }
 
 bool client_list_remove(struct client_list *cl, int client_socket) {
+  pthread_mutex_lock(&cl->mutex);
   for (int i = 0; i < cl->fds.len; ++i) {
     struct pollfd *local_fd = &cl->fds.pollfd_data[i];
     if (local_fd->fd == client_socket) {
+      printf("removing client %d.\n", client_socket);
       bool fds_result = client_list_remove_by_idx(cl, i);
       struct client_metadata *md = &cl->metadata.client_metadata_data[i];
       client_metadata_free(md);
       bool metadata_result = client_metadata_array_remove(cl, i);
-      if (!fds_result || metadata_result) {
+      if (!fds_result || !metadata_result) {
         fprintf(stderr, "client list remove is out of synch.\n");
         exit(1);
       }
       break;
     }
   }
+  pthread_mutex_unlock(&cl->mutex);
   return true;
 }
 
 bool client_list_remove_by_idx(struct client_list *cl, int idx) {
+  printf("before remove fds.len=%zu.\n", cl->fds.len);
   bool result = array_remove_item(&cl->fds, idx);
+  printf("after remove fds.len=%zu.\n", cl->fds.len);
   int gap_size = cl->fds.cap - cl->fds.len;
   if (gap_size > 100) {
     // cut gap size in half to reclaim memory
@@ -82,6 +98,7 @@ bool client_list_remove_by_idx(struct client_list *cl, int idx) {
 }
 
 bool client_list_get(struct client_list *cl, int client_socket, struct pollfd *fd) {
+  pthread_mutex_lock(&cl->mutex);
   bool found = false;
   struct pollfd local;
   for (int i = 0; i < cl->fds.len; ++i) {
@@ -92,16 +109,23 @@ bool client_list_get(struct client_list *cl, int client_socket, struct pollfd *f
       break;
     }
   }
+  pthread_mutex_unlock(&cl->mutex);
   return found;
 }
 
 bool client_list_get_by_idx(struct client_list *cl, int idx, struct pollfd *fd) {
-  if (idx >= cl->fds.len) return false;
+  pthread_mutex_lock(&cl->mutex);
+  if (idx >= cl->fds.len) {
+    pthread_mutex_unlock(&cl->mutex);
+    return false;
+  }
   *fd = cl->fds.pollfd_data[idx];
+  pthread_mutex_unlock(&cl->mutex);
   return true;
 }
 
 int client_list_get_idx(struct client_list *cl, int client_socket) {
+  pthread_mutex_lock(&cl->mutex);
   struct pollfd local;
   int idx = -1;
   for (int i = 0; i < cl->fds.len; ++i) {
@@ -111,19 +135,24 @@ int client_list_get_idx(struct client_list *cl, int client_socket) {
       break;
     }
   }
+  pthread_mutex_unlock(&cl->mutex);
   return idx;
 }
 
 bool client_list_close_connections(struct client_list *cl) {
+  pthread_mutex_lock(&cl->mutex);
   for (int i = 0; i < cl->fds.len; ++i) {
     struct pollfd *client = &cl->fds.pollfd_data[i];
     close(client->fd);
   }
+  pthread_mutex_unlock(&cl->mutex);
   return true;
 }
 
 void client_list_free(struct client_list *cl) {
   free_pollfd_array(&cl->fds);
+  free_client_metadata_array(&cl->metadata);
+  pthread_mutex_destroy(&cl->mutex);
 }
 
 bool client_metadata_init(struct client_metadata *metadata) {

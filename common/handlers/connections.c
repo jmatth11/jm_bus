@@ -89,14 +89,15 @@ void* process_poll_events(void *ctx) {
     } else {
       if (local_c->revents & (POLLHUP | POLLERR)) {
           fprintf(stdout, "client %d disconnected\n", local_c->fd);
-          insert_int_array(&marked, i);
+          insert_int_array(&marked, local_c->fd);
       } else if (local_c->revents & POLLIN) {
+        printf("handling client's polling\n");
         message_array msgs = message_array_generate_from_client(local_c->fd);
         if (msgs.len == 0) {
           fprintf(stdout, "client %d messaged with 0 recv -- disconnecting\n", local_c->fd);
           message_array_free_list(msgs);
           free_message_array(&msgs);
-          insert_int_array(&marked, i);
+          insert_int_array(&marked, local_c->fd);
           continue;
         }
         struct message_event event = {
@@ -107,13 +108,13 @@ void* process_poll_events(void *ctx) {
         thread_pool_start_job(state->pool, process_messages, event);
       } else if (local_c->revents & POLLNVAL) {
         fprintf(stderr, "client %d had an invalid polling state -- disconnecting.\n", local_c->fd);
-        insert_int_array(&marked, i);
+        insert_int_array(&marked, local_c->fd);
       }
     }
   }
   // remove the marked clients.
   for (int marked_idx = 0; marked_idx < marked.len; ++marked_idx) {
-    if (!server_state_remove_clients(state, marked)) {
+    if (!server_state_remove_client(state, marked.int_data[marked_idx])) {
       fprintf(stderr, "server state failed to remove clients.\n");
       exit(1);
     }

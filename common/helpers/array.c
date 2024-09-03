@@ -3,34 +3,46 @@
 
 bool array_remove_pollfd_item(pollfd_array *fds, size_t idx) {
   if (idx >= fds->len || idx < 0) return false;
+  if (idx == (fds->len -1)) {
+    fds->len = fds->len - 1;
+    return true;
+  }
   // move item at index to end of array
   struct pollfd local = fds->pollfd_data[fds->len - 1];
-  fds->pollfd_data[fds->len - 1] = fds->pollfd_data[idx];
   fds->pollfd_data[idx] = local;
+  fds->pollfd_data[fds->len - 1].fd = -1;
   // decrement the length to "remove" it
-  --fds->len;
+  fds->len = fds->len - 1;
   return true;
 }
 
 bool array_remove_int_item(int_array *arr, size_t idx) {
   if (idx >= arr->len || idx < 0) return false;
+  if (idx == (arr->len -1)) {
+    arr->len = arr->len - 1;
+    return true;
+  }
   // move item at index to end of array
   int local = arr->int_data[arr->len - 1];
   arr->int_data[arr->len - 1] = arr->int_data[idx];
   arr->int_data[idx] = local;
   // decrement the length to "remove" it
-  --arr->len;
+  arr->len = arr->len - 1;
   return true;
 }
 
 bool array_remove_client_metadata_item(client_metadata_array *arr, size_t idx) {
   if (idx >= arr->len || idx < 0) return false;
+  if (idx == (arr->len -1)) {
+    arr->len = arr->len - 1;
+    return true;
+  }
   // move item at index to end of array
   struct client_metadata local = arr->client_metadata_data[arr->len - 1];
   arr->client_metadata_data[arr->len - 1] = arr->client_metadata_data[idx];
   arr->client_metadata_data[idx] = local;
   // decrement the length to "remove" it
-  --arr->len;
+  arr->len = arr->len - 1;
   return true;
 }
 

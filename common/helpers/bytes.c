@@ -45,7 +45,7 @@ bool str_to_byte_array(const char *str, byte_array *out) {
 char* byte_array_to_str(byte_array *arr) {
   char *result = malloc(sizeof(char)*arr->len);
   if (result == NULL) return result;
-  memcpy(result, arr->byte_data, arr->len);
+  memcpy(result, arr->byte_data, arr->len - 1);
   return result;
 }
 

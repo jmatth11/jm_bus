@@ -63,18 +63,6 @@ bool server_state_remove_client(
 ) __THROWNL __nonnull((1));
 
 /**
- * Remove a list of clients to server client list.
- *
- * @param[out] s The server state.
- * @param[in] client_idxs The indexes of the clients to remove from the client list.
- * @return True if successful, False otherwise.
- */
-bool server_state_remove_clients(
-  struct server_state *s,
-  int_array client_idxs
-) __THROWNL __nonnull((1));
-
-/**
  * Free the server state and it's internal structures.
  *
  * @param[out] s The server state.
