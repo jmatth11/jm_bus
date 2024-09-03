@@ -13,7 +13,6 @@ struct pollfd;
 bool client_list_init(struct client_list *cl) __THROWNL __nonnull((1));
 bool client_list_add(struct client_list *cl, int client_socket) __THROWNL __nonnull ((1));
 bool client_list_remove(struct client_list *cl, int client_socket) __THROWNL __nonnull ((1));
-bool client_list_remove_by_idx(struct client_list *cl, int idx) __THROWNL __nonnull ((1));
 bool client_list_get(struct client_list *cl, int client_socket, struct pollfd *ci) __THROWNL __nonnull ((1));
 bool client_list_get_by_idx(struct client_list *cl, int idx, struct pollfd *ci);
 int client_list_get_idx(struct client_list *cl, int client_socket) __THROWNL __nonnull((1));

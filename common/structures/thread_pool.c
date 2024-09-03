@@ -2,8 +2,9 @@
 
 #include "thread_pool.h"
 
+#include "helpers/log.h"
+
 #include <pthread.h>
-#include <stdio.h>
 #include <sys/poll.h>
 #include <unistd.h>
 
@@ -17,16 +18,16 @@ struct thread_pool {
 struct thread_pool* thread_pool_create(size_t n) {
   struct thread_pool *pool = malloc(sizeof(struct thread_pool));
   if (pool == NULL) {
-    fprintf(stderr, "malloc thread pool failed.\n");
+    error_log("malloc thread pool failed.\n");
     return NULL;
   }
   if (!init_thread_job_array(&pool->threads, n)) {
-    fprintf(stderr, "initializing thread job array failed.\n");
+    error_log("initializing thread job array failed.\n");
     free(pool);
     return NULL;
   }
   if (pthread_mutex_init(&pool->lock, NULL) < 0) {
-    fprintf(stderr, "pthread mutex init failed.\n");
+    error_log("pthread mutex init failed.\n");
     return NULL;
   }
   return pool;
@@ -37,7 +38,6 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
   for (int i = 0; i < pool->threads.len; ++i) {
     struct thread_job *job = &pool->threads.thread_job_data[i];
     if (atomic_compare_exchange_strong(&job->occupied, &found, true)) {
-      printf("reusing existing thread\n");
       found = true;
       job->event = event;
       pthread_cond_signal(&job->cond);
@@ -52,16 +52,15 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
     struct thread_job *ref = &pool->threads.thread_job_data[pool->threads.len -1];
     ref->event = event;
     if (pthread_cond_init(&ref->cond, NULL) != 0) {
-      fprintf(stderr, "pthread condition init failed.\n");
+      error_log("pthread condition init failed.\n");
       return false;
     }
     if (pthread_mutex_init(&ref->mutex, NULL) != 0) {
-      fprintf(stderr, "pthread mutex init failed.\n");
+      error_log("pthread mutex init failed.\n");
       return false;
     }
-    printf("create thread\n");
     if (pthread_create(&ref->thread_fd, NULL, callback, ref) != 0) {
-      fprintf(stderr, "pthread create failed.\n");
+      error_log("pthread create failed.\n");
       return false;
     }
     // wait for thread to start up.
@@ -70,7 +69,6 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
     pthread_mutex_unlock(&ref->mutex);
 
     pthread_mutex_unlock(&pool->lock);
-    printf("cond signal");
     // signal to the thread to unblock
     pthread_cond_signal(&ref->cond);
   }

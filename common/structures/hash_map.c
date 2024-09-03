@@ -2,11 +2,11 @@
 
 #include "hash_map.h"
 #include "helpers/array.h"
+#include "helpers/log.h"
 #include "helpers/strings.h"
 #include "types/array_types.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -51,17 +51,17 @@ static bool hash_map_remove_entry(map_entry_array *arr, size_t idx) {
 struct hash_map * hash_map_create(size_t N) {
   struct hash_map *hm = malloc(sizeof(struct hash_map));
   if (hm == NULL) {
-    fprintf(stderr, "error hash map init.\n");
+    error_log("error hash map init.\n");
     return NULL;
   }
   if (!init_map_array(&hm->entries, N)) {
     free(hm);
-    fprintf(stderr, "error hash map init entries.\n");
+    error_log("error hash map init entries.\n");
     return NULL;
   }
   if (pthread_mutex_init(&hm->mutex, NULL) < 0) {
     hash_map_destroy(hm);
-    fprintf(stderr, "hash map mutex failed to initialize.\n");
+    error_log("hash map mutex failed to initialize.\n");
     return NULL;
   }
   hm->entries.len = N;
@@ -122,7 +122,7 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
     if (!init_map_entry_array(row, 10)) {
-      fprintf(stderr, "error init map entry in hash map get.\n");
+      error_log("error init map entry in hash map get.\n");
       result = false;
       goto clean_up;
     }
@@ -133,7 +133,7 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
       if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
         exists = true;
         if (!insert_int_array(&existing_entry->value, value)) {
-          fprintf(stderr, "insert value in existing hash map failed.\n");
+          error_log("insert value in existing hash map failed.\n");
           result = false;
           goto clean_up;
         }
@@ -147,14 +147,14 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
     entry->key = malloc(sizeof(char) * key_len);
     strncpy(entry->key, key, key_len);
     if (!init_int_array(&entry->value, 3)) {
-      fprintf(stderr, "hash map entry array failed.\n");
+      error_log("hash map entry array failed.\n");
       free(entry->key);
       free(entry);
       result = false;
       goto clean_up;
     }
     if (!insert_int_array(&entry->value, value)) {
-      fprintf(stderr, "insert value in new hash map failed.\n");
+      error_log("insert value in new hash map failed.\n");
       free_int_array(&entry->value);
       free(entry->key);
       free(entry);
@@ -162,7 +162,7 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
       goto clean_up;
     }
     if (!insert_map_entry_array(row, entry)) {
-      fprintf(stderr, "inserting new entry in hash map failed.\n");
+      error_log("inserting new entry in hash map failed.\n");
       free_int_array(&entry->value);
       free(entry->key);
       free(entry);
@@ -206,13 +206,12 @@ bool hash_map_remove(struct hash_map* hm, const char *key) {
 }
 
 bool hash_map_remove_value(struct hash_map* hm, const char *key, const int value) {
-  printf("DEBUGGING hash_map_remove_value: topic %s, value %d.\n", key, value);
   pthread_mutex_lock(&hm->mutex);
   int hash = hash_from_str(key);
   int idx = fast_mod(hash, hm->entries.cap);
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
-    fprintf(stderr, "key does not exist.\n");
+    error_log("key does not exist.\n");
     pthread_mutex_unlock(&hm->mutex);
     return false;
   }
@@ -223,19 +222,18 @@ bool hash_map_remove_value(struct hash_map* hm, const char *key, const int value
     if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
       for (int entry_idx = 0; entry_idx < existing_entry->value.len; ++entry_idx) {
         int local_val = existing_entry->value.int_data[entry_idx];
-        printf("ENTRY VAL %d.\n", local_val);
         if (local_val == value) {
           remove_idx = entry_idx;
           break;
         }
       }
       if (remove_idx == -1) {
-        fprintf(stderr, "hash map remove_value idx not found.\n");
+        error_log("hash map remove_value idx not found.\n");
         pthread_mutex_unlock(&hm->mutex);
         return false;
       }
       if (!array_remove_item(&existing_entry->value, remove_idx)) {
-        fprintf(stderr, "failed to remove int from hash map entry.\n");
+        error_log("failed to remove int from hash map entry.\n");
         pthread_mutex_unlock(&hm->mutex);
         return false;
       }

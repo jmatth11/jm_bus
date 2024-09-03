@@ -1,6 +1,6 @@
 #include "socket.h"
+#include "helpers/log.h"
 #include "handlers/messages.h"
-#include <stdio.h>
 
 struct sockaddr_in create_default_addr() {
   struct sockaddr_in serv_addr;
@@ -21,12 +21,12 @@ struct sockaddr_in create_addr(sa_family_t __type, uint16_t port, int32_t addr) 
 bool prepare_and_send_message(int socket, struct message *msg) {
   byte_array data;
   if (messages_write(msg, &data) == 0) {
-    fprintf(stderr, "prepare_and_send_message generated zero bytes.\n");
+    error_log("prepare_and_send_message generated zero bytes.\n");
     return false;
   }
   bool result = true;
   if (!send_message(socket, data)) {
-    fprintf(stderr, "prepare_and_send_message send message failed.\n");
+    error_log("prepare_and_send_message send message failed.\n");
     result = false;
   }
   free_byte_array(&data);
@@ -35,7 +35,7 @@ bool prepare_and_send_message(int socket, struct message *msg) {
 
 bool send_message(int socket, byte_array buf) {
   if (send(socket, buf.byte_data, buf.len, 0) == -1) {
-    fprintf(stderr, "failed to send message to socket %d\n", socket);
+    error_log("failed to send message to socket %d\n", socket);
     return false;
   }
   return true;

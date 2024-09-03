@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include "helpers/bytes.h"
+#include "helpers/log.h"
 #include "types/array_types.h"
 #include "types/message.h"
 
@@ -15,7 +16,7 @@ static uint8_t read_buffer[BUFSIZ];
 static bool read_all_raw_bytes(int socket, byte_array *out) {
   byte_array byte_buffer;
   if (!init_byte_array(&byte_buffer, BUFSIZ)) {
-    fprintf(stderr, "init byte array from client failed.\n");
+    error_log("init byte array from client failed.\n");
     return false;
   }
   size_t n = 0;
@@ -23,7 +24,7 @@ static bool read_all_raw_bytes(int socket, byte_array *out) {
     n = recv(socket, read_buffer, BUFSIZ, 0);
     for (int i = 0; i < n; ++i) {
       if (!insert_byte_array(&byte_buffer, read_buffer[i])) {
-        fprintf(stderr, "generating byte array from client failed.\n");
+        error_log("generating byte array from client failed.\n");
         free_byte_array(&byte_buffer);
         return false;
       }
@@ -35,9 +36,13 @@ static bool read_all_raw_bytes(int socket, byte_array *out) {
 
 size_t messages_read(const byte_array msg, struct message *out) {
   // TODO probably add some way to debug when we hit an error
-  printf("DEBUG: message_read\n");
+
+#ifdef DEBUG
+  debug_log("DEBUG: message_read\n");
   print_byte_array(msg);
-  printf("DEBUG: message_read end\n");
+  debug_log("DEBUG: message_read end\n");
+#endif
+
   struct message local;
   size_t cur_idx = 0;
   if (msg.len <= 0) return 0;
@@ -48,7 +53,7 @@ size_t messages_read(const byte_array msg, struct message *out) {
   size_t topic_len = 0;
   convert_n_utf8_to_64bit(&msg.byte_data[cur_idx], JM_BUS_UTF8_BYTE_LEN, &topic_len);
   if (!init_byte_array(&local.topic, topic_len)) {
-    fprintf(stderr, "error initializing topic.\n");
+    error_log("error initializing topic.\n");
     message_free(&local);
     return 0;
   }
@@ -67,7 +72,7 @@ size_t messages_read(const byte_array msg, struct message *out) {
   size_t body_len = 0;
   convert_n_utf8_to_64bit(&msg.byte_data[cur_idx], JM_BUS_UTF8_BYTE_LEN, &body_len);
   if (!init_byte_array(&local.body, body_len)) {
-    fprintf(stderr, "error initializing body.\n");
+    error_log("error initializing body.\n");
     message_free(&local);
     return 0;
   }
@@ -82,7 +87,7 @@ size_t messages_read(const byte_array msg, struct message *out) {
   cur_idx += body_len;
   size_t total_len = (1 + (JM_BUS_UTF8_BYTE_LEN *2) + topic_len + body_len);
   if (cur_idx != total_len) {
-    fprintf(stderr, "cur_idx != local.len -- %zu != %zu\n", cur_idx, total_len);
+    error_log("cur_idx != local.len -- %zu != %zu\n", cur_idx, total_len);
   }
   *out = local;
   return cur_idx;
@@ -94,11 +99,11 @@ size_t messages_write(const struct message *msg, byte_array *out) {
   byte_array local;
   size_t cur_idx = 0;
   if (!init_byte_array(&local, msg_len)) {
-    fprintf(stderr, "error initializing message.\n");
+    error_log("error initializing message.\n");
     return 0;
   }
   if (!insert_byte_array(&local, msg->type)) {
-    fprintf(stderr, "error inserting type byte.\n");
+    error_log("error inserting type byte.\n");
     free_byte_array(&local);
     return 0;
   }
@@ -108,7 +113,7 @@ size_t messages_write(const struct message *msg, byte_array *out) {
   local.len = cur_idx;
   for (int i = 0; i < msg->topic.len; ++i) {
     if (!insert_byte_array(&local, msg->topic.byte_data[i])) {
-      fprintf(stderr, "error with insert_byte_array for topic.\n");
+      error_log("error with insert_byte_array for topic.\n");
       free_byte_array(&local);
       return 0;
     }
@@ -119,28 +124,28 @@ size_t messages_write(const struct message *msg, byte_array *out) {
   local.len = cur_idx;
   for (int i = 0; i < msg->body.len; ++i) {
     if (!insert_byte_array(&local, msg->body.byte_data[i])) {
-      fprintf(stderr, "error with insert_byte_array for body.\n");
+      error_log("error with insert_byte_array for body.\n");
       free_byte_array(&local);
       return 0;
     }
   }
   cur_idx += msg->body.len;
   if (cur_idx != local.len) {
-    fprintf(stderr, "cur_idx != local.len -- %zu != %zu\n", cur_idx, local.len);
+    error_log("cur_idx != local.len -- %zu != %zu\n", cur_idx, local.len);
   }
   *out = local;
   return cur_idx;
 }
 
 void message_print(struct message *msg) {
-  printf("Message Info\n");
-  printf("Type: %d\n", msg->type);
-  printf("Topic:\n");
+  info_log("Message Info\n");
+  info_log("Type: %d\n", msg->type);
+  info_log("Topic:\n");
   print_byte_array(msg->topic);
-  printf("\n");
-  printf("Body:\n");
+  info_log("\n");
+  info_log("Body:\n");
   print_byte_array(msg->body);
-  printf("\n");
+  info_log("\n");
 }
 
 size_t messages_gen_connection(byte_array *out) {
@@ -157,13 +162,13 @@ size_t messages_gen_error(char *err, byte_array topic, byte_array *out) {
     .type = ERROR,
   };
   if (!init_byte_array(&msg.body, 20)) {
-    fprintf(stderr, "error generating body for error message.\n");
+    error_log("error generating body for error message.\n");
     return 0;
   }
   size_t n = strlen(err);
   for (int i = 0; i < n; ++i) {
     if (!insert_byte_array(&msg.body, err[i])) {
-      fprintf(stderr, "error inserting character for error message.\n");
+      error_log("error inserting character for error message.\n");
     }
   }
   int ret = messages_write(&msg, out);
@@ -180,12 +185,12 @@ char * message_get_topic(const struct message *msg) {
 message_array message_array_generate_from_client(int client_sock) {
   message_array result;
   if (!init_message_array(&result, 2)) {
-    fprintf(stderr, "init message array from client failed.\n");
+    error_log("init message array from client failed.\n");
     return result;
   }
   byte_array byte_buffer;
   if (!read_all_raw_bytes(client_sock, &byte_buffer)) {
-    fprintf(stderr, "message_array_generate_from_client error reading all bytes.\n");
+    error_log("message_array_generate_from_client error reading all bytes.\n");
     free_message_array(&result);
     return result;
   }
@@ -194,7 +199,7 @@ message_array message_array_generate_from_client(int client_sock) {
     struct message local_c;
     int read_n = messages_read(byte_buffer, &local_c);
     if (read_n == 0) {
-      fprintf(stderr, "message_array_generate_from_client messages_read returned 0\n");
+      error_log("message_array_generate_from_client messages_read returned 0\n");
       n += byte_buffer.len;
       continue;
     }
@@ -204,7 +209,7 @@ message_array message_array_generate_from_client(int client_sock) {
       byte_buffer.len -= read_n;
     }
     if (!insert_message_array(&result, local_c)) {
-      fprintf(stderr, "failed to insert message from client.\n");
+      error_log("failed to insert message from client.\n");
       free_byte_array(&byte_buffer);
       message_array_free_list(result);
       free_message_array(&result);

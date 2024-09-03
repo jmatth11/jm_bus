@@ -1,6 +1,6 @@
 #include "bytes.h"
+#include "helpers/log.h"
 #include "types/array_types.h"
-#include <stdio.h>
 #include <string.h>
 
 void convert_64bit_to_n_utf8(size_t val, size_t n, uint8_t *out) {
@@ -20,7 +20,7 @@ void convert_n_utf8_to_64bit(uint8_t *buf, size_t n, size_t *out) {
 void read_byte_array(uint8_t *buf, byte_array *arr) {
   for (int i = 0; i < arr->cap; ++i) {
     if (!insert_byte_array(arr, buf[i])) {
-      fprintf(stderr, "error inserting byte.\n");
+      error_log("error inserting byte.\n");
     }
   }
 }
@@ -29,12 +29,12 @@ bool str_to_byte_array(const char *str, byte_array *out) {
   byte_array local;
   size_t str_len = strlen(str);
   if (!init_byte_array(&local, str_len)) {
-    fprintf(stderr, "str_to_byte_array init_byte_array failed.\n");
+    error_log("str_to_byte_array init_byte_array failed.\n");
     return false;
   }
   for (int i = 0; i < str_len; ++i) {
     if (!insert_byte_array(&local, str[i])) {
-      fprintf(stderr, "str_to_byte_array insert byte failed.\n");
+      error_log("str_to_byte_array insert byte failed.\n");
       return false;
     }
   }
@@ -51,7 +51,7 @@ char* byte_array_to_str(byte_array *arr) {
 
 void print_byte_array(byte_array arr) {
   for (int str_idx = 0; str_idx < arr.len; ++str_idx) {
-    printf("%x ",arr.byte_data[str_idx]);
+    info_log("%x ",arr.byte_data[str_idx]);
   }
 }
 
