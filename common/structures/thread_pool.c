@@ -40,6 +40,7 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
     if (atomic_compare_exchange_strong(&job->occupied, &found, true)) {
       found = true;
       job->event = event;
+      // signal for the job to start
       pthread_cond_signal(&job->cond);
       break;
     }
@@ -53,14 +54,17 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
     ref->event = event;
     if (pthread_cond_init(&ref->cond, NULL) != 0) {
       error_log("pthread condition init failed.\n");
+      pthread_mutex_unlock(&pool->lock);
       return false;
     }
     if (pthread_mutex_init(&ref->mutex, NULL) != 0) {
       error_log("pthread mutex init failed.\n");
+      pthread_mutex_unlock(&pool->lock);
       return false;
     }
     if (pthread_create(&ref->thread_fd, NULL, callback, ref) != 0) {
       error_log("pthread create failed.\n");
+      pthread_mutex_unlock(&pool->lock);
       return false;
     }
     // wait for thread to start up.
