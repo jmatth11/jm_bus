@@ -6,8 +6,13 @@
 
 __BEGIN_DECLS
 
+/**
+ * The basic server info structure.
+ */
 struct server_info {
+  /* server connection info */
   struct sockaddr_in addr;
+  /* the server's socket */
   int socket;
 };
 

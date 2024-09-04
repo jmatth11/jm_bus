@@ -8,14 +8,22 @@
 
 __BEGIN_DECLS
 
+// forward declare
 struct hash_map;
 
+/**
+ * The main structure to manage server state.
+ */
 struct server_state {
+  /* the list of clients and their info */
   struct client_list clients;
+  /* the server info */
   struct server_info server;
+  /* the registered topics as a Key(topic) Value(array of client sockets) pair. */
   struct hash_map *topics;
+  /* the thread pool */
   struct thread_pool *pool;
-  atomic_int action;
+  /* atomic flag for the running process. */
   atomic_bool running;
 };
 
