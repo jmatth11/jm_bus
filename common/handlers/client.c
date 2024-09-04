@@ -28,8 +28,19 @@ bool client_connect(struct client *c) {
     error_log("client connection failed.\n");
     return false;
   }
-  // TODO validate connection response.
-  return true;
+  message_array msgs = client_read_messages(c);
+  if (msgs.len == 0) {
+    error_log("error in retrieving connection reciept from server.\n");
+    return false;
+  }
+  bool result = false;
+  for (int i = 0; i < msgs.len; ++i) {
+    struct message *m = &msgs.message_data[i];
+    if (m->type == CONNECTION) {
+      result = true;
+    }
+  }
+  return result;
 }
 
 bool client_subscribe(struct client *c, char *topic) {

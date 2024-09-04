@@ -46,23 +46,22 @@ static bool publish_message(struct server_state *s, int from, struct message *ms
   return true;
 }
 
-void* accept_messages(void *ctx) {
-  struct server_state *state = (struct server_state*)ctx;
+void accept_messages(struct server_state *state) {
   int client_sock = accept(state->server.socket, NULL, NULL);
   if (client_sock != -1) {
     info_log("adding client %d\n", client_sock);
     byte_array buf;
     if (!init_byte_array(&buf, 20)) {
       error_detailed("connection message for client %d failed.\n", client_sock);
-      return NULL;
+      return;
     }
     if (messages_gen_connection(&buf) == 0) {
       error_log("create connection message for client %d failed.\n", client_sock);
-      return NULL;
+      return;
     }
     if (!send_message(client_sock, buf)) {
       error_log("sending connection message for client %d failed.\n", client_sock);
-      return NULL;
+      return;
     }
     if (!server_state_add_client(state, client_sock)) {
       error_log("server state add client failed.\n");
@@ -70,16 +69,13 @@ void* accept_messages(void *ctx) {
   } else {
     error_log("socket accept failed: %s\n", strerror(errno));
   }
-  return NULL;
 }
 
-void* process_poll_events(void *ctx) {
-  struct server_state *state = (struct server_state*)ctx;
+void process_poll_events(struct server_state *state) {
   int_array marked;
   init_int_array(&marked, 10);
   for (int i = 0; i < state->clients.fds.len; ++i) {
     struct pollfd *local_c = &state->clients.fds.pollfd_data[i];
-    // set the client connections to the read listener.
 #ifdef DEBUG
     debug_detailed("client %d, local_c.revents: %04x\n", local_c->fd, local_c->revents);
 #endif
@@ -119,7 +115,6 @@ void* process_poll_events(void *ctx) {
       exit(1);
     }
   }
-  return NULL;
 }
 
 void* process_messages(void *ctx) {
@@ -153,7 +148,7 @@ void* process_messages(void *ctx) {
             if (!server_state_add_client_topic(state, topic_name, job->event.from)) {
               error_log("Client %d: error subsribing to topic\n", job->event.from);
               byte_array err_msg;
-              if (messages_gen_error("error subscribing to topic", msg->topic, &err_msg) != 0) {
+              if (messages_gen_error("error subscribing to topic", &err_msg) != 0) {
                 send_message(job->event.from, err_msg);
                 free_byte_array(&err_msg);
               } else {
@@ -169,7 +164,7 @@ void* process_messages(void *ctx) {
           if (!publish_message(state, job->event.from, msg)) {
             error_log("Client %d: error publishing message to topic %s.\n", job->event.from, topic_name);
             byte_array err_msg;
-            if (messages_gen_error("error publishing message to topic", msg->topic, &err_msg) != 0) {
+            if (messages_gen_error("error publishing message to topic", &err_msg) != 0) {
               send_message(job->event.from, err_msg);
               free_byte_array(&err_msg);
             } else {

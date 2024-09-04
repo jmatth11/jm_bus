@@ -7,6 +7,7 @@ __BEGIN_DECLS
 
 /**
  * Generate a hash representation of the given string.
+ *
  * @param[in] str The string.
  * @return The hash value.
  */

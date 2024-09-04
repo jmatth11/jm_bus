@@ -50,6 +50,9 @@ bool str_to_byte_array(const char *str, byte_array *out) __THROWNL __nonnull((1,
  */
 char* byte_array_to_str(byte_array *arr) __THROWNL __nonnull((1));
 
+/**
+ * Print the byte array out. Mostly used for debugging.
+ */
 void print_byte_array(byte_array arr);
 
 __END_DECLS

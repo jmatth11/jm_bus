@@ -157,7 +157,7 @@ size_t messages_gen_connection(byte_array *out) {
   return ret;
 }
 
-size_t messages_gen_error(char *err, byte_array topic, byte_array *out) {
+size_t messages_gen_error(char *err, byte_array *out) {
   struct message msg = {
     .type = ERROR,
   };
