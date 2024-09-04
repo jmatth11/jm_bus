@@ -58,8 +58,9 @@ bool server_state_add_client_topic(struct server_state *s, const char *topic, in
       return true;
     }
   }
-  char *md_topic = malloc(sizeof(char)*topic_len);
+  char *md_topic = malloc(sizeof(char)*topic_len + 1);
   strncpy(md_topic, topic, topic_len);
+  md_topic[topic_len] = '\0';
   if (!insert_str_array(&metadata->topics, md_topic)) {
     error_log("copying topic to metadata failed.\n");
     return false;

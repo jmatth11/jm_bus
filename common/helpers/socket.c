@@ -27,6 +27,7 @@ bool prepare_and_send_message(int socket, struct message *msg) {
   bool result = true;
   if (!send_message(socket, data)) {
     error_log("prepare_and_send_message send message failed.\n");
+    exit(1);
     result = false;
   }
   free_byte_array(&data);

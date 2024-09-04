@@ -1,5 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -std=c11
+PFLAGS=-DDEBUG=1
 LIBS=-lm
 INCLUDES=-I../deps/ -I.
 OBJ=obj
@@ -25,7 +26,7 @@ $(OBJ)/%.o: %.c
 $(OBJ)/%-debug.o: %.c
 	@mkdir -p $(dir $@)
 	@mkdir -p $(BIN)
-	$(CC) -ggdb -fPIC -c -o $@ $< $(CFLAGS) $(INCLUDES)
+	$(CC) -ggdb -fPIC -c -o $@ $< $(PFLAGS) $(CFLAGS) $(INCLUDES)
 
 .PHONY: archive
 archive: $(OBJECTS)

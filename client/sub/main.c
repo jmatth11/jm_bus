@@ -25,7 +25,6 @@ int main(int argc, const char **argv) {
     fprintf(stderr, "connect failed.\n");
     exit(1);
   }
-  client_read_messages(&client);
   sleep(1);
   if (!client_subscribe(&client, "test_topic")) {
     fprintf(stderr, "client subscription failed.\n");

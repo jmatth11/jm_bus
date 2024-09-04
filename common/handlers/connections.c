@@ -177,6 +177,8 @@ void* process_messages(void *ctx) {
           server_state_remove_client(job->event.state, job->event.from);
           break;
         }
+        case CONNECTION:
+          break;
       }
       free(topic_name);
     }

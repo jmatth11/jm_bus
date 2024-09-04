@@ -177,8 +177,9 @@ size_t messages_gen_error(char *err, byte_array *out) {
 }
 
 char * message_get_topic(const struct message *msg) {
-  char *topic = malloc(sizeof(char)*msg->topic.len);
+  char *topic = malloc(sizeof(char)*msg->topic.len + 1);
   memcpy(topic, msg->topic.byte_data, msg->topic.len);
+  topic[msg->topic.len] = '\0';
   return topic;
 }
 
@@ -195,7 +196,8 @@ message_array message_array_generate_from_client(int client_sock) {
     return result;
   }
   size_t n = 0;
-  while (n < byte_buffer.len) {
+  size_t original_len = byte_buffer.len;
+  while (n < original_len) {
     struct message local_c;
     int read_n = messages_read(byte_buffer, &local_c);
     if (read_n == 0) {
@@ -204,7 +206,7 @@ message_array message_array_generate_from_client(int client_sock) {
       continue;
     }
     n += read_n;
-    if (n < byte_buffer.len) {
+    if (n < original_len) {
       byte_buffer.byte_data = &byte_buffer.byte_data[read_n];
       byte_buffer.len -= read_n;
     }

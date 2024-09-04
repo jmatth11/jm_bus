@@ -51,8 +51,9 @@ static bool hash_map_remove_entry(map_entry_array *arr, size_t idx) {
 static bool hash_map_add_new_entry(map_entry_array *row, const char *key, const int value) {
   struct hash_map_entry *entry = malloc(sizeof(struct hash_map_entry));
   size_t key_len = strlen(key);
-  entry->key = malloc(sizeof(char) * key_len);
+  entry->key = malloc(sizeof(char) * (key_len+1));
   strncpy(entry->key, key, key_len);
+  entry->key[key_len] = '\0';
   if (!init_int_array(&entry->value, 3)) {
     error_log("hash map entry array failed.\n");
     free(entry->key);
@@ -122,23 +123,26 @@ bool hash_map_get(struct hash_map *hm, const char *key, int_array *out) {
   pthread_mutex_lock(&hm->mutex);
   int hash = hash_from_str(key);
   int idx = fast_mod(hash, hm->entries.cap);
+  size_t key_len = strlen(key);
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
     pthread_mutex_unlock(&hm->mutex);
     return false;
   }
+  bool result = false;
   for (int i = 0; i < row->len; ++i) {
     struct hash_map_entry *entry = NULL;
     get_map_entry_array(row, i, &entry);
     if (entry != NULL) {
-      if (strcmp(entry->key, key) == 0) {
+      if (strncmp(entry->key, key, key_len) == 0) {
         *out = entry->value;
+        result = true;
         break;
       }
     }
   }
   pthread_mutex_unlock(&hm->mutex);
-  return true;
+  return result;
 }
 
 bool hash_map_set(struct hash_map *hm, const char *key, int value) {
@@ -146,7 +150,8 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
   bool result = true;
   int hash = hash_from_str(key);
   int idx = fast_mod(hash, hm->entries.cap);
-  bool exists = true;
+  size_t key_len = strlen(key);
+  bool exists = false;
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
     if (!init_map_entry_array(row, 10)) {
@@ -157,7 +162,7 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
     for (int i = 0; i < row->len; ++i) {
       struct hash_map_entry *existing_entry = NULL;
       get_map_entry_array(row, i, &existing_entry);
-      if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
+      if (existing_entry != NULL && strncmp(existing_entry->key, key, key_len) == 0) {
         exists = true;
         if (!insert_int_array(&existing_entry->value, value)) {
           error_log("insert value in existing hash map failed.\n");
@@ -180,6 +185,7 @@ bool hash_map_remove(struct hash_map* hm, const char *key) {
   pthread_mutex_lock(&hm->mutex);
   int hash = hash_from_str(key);
   int idx = fast_mod(hash, hm->entries.cap);
+  size_t key_len = strlen(key);
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
     pthread_mutex_unlock(&hm->mutex);
@@ -189,7 +195,7 @@ bool hash_map_remove(struct hash_map* hm, const char *key) {
   for (int i = 0; i < row->len; ++i) {
     struct hash_map_entry *existing_entry = NULL;
     get_map_entry_array(row, i, &existing_entry);
-    if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
+    if (existing_entry != NULL && strncmp(existing_entry->key, key, key_len) == 0) {
       remove_idx = i;
       free(existing_entry->key);
       free_int_array(&existing_entry->value);
@@ -210,6 +216,7 @@ bool hash_map_remove_value(struct hash_map* hm, const char *key, const int value
   pthread_mutex_lock(&hm->mutex);
   int hash = hash_from_str(key);
   int idx = fast_mod(hash, hm->entries.cap);
+  size_t key_len = strlen(key);
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
     error_log("key does not exist.\n");
@@ -221,7 +228,7 @@ bool hash_map_remove_value(struct hash_map* hm, const char *key, const int value
   for (int i = 0; i < row->len; ++i) {
     struct hash_map_entry *existing_entry = NULL;
     get_map_entry_array(row, i, &existing_entry);
-    if (existing_entry != NULL && strcmp(existing_entry->key, key) == 0) {
+    if (existing_entry != NULL && strncmp(existing_entry->key, key, key_len) == 0) {
       for (int entry_idx = 0; entry_idx < existing_entry->value.len; ++entry_idx) {
         int local_val = existing_entry->value.int_data[entry_idx];
         if (local_val == value) {
