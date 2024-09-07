@@ -3,7 +3,6 @@
 #include "helpers/bytes.h"
 #include "helpers/log.h"
 #include "helpers/socket.h"
-#include "types/array_types.h"
 #include "types/client.h"
 #include "types/message.h"
 #include <string.h>

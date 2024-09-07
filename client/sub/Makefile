@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -std=c11
-LIBS=-lm -L../../common/lib/ -ljm_bus
+LIBS=-lm -L../../common/lib/ -ljm_bus_client
 LIBS_DEBUG=-lm -L../../common/lib/ -ljm_bus-debug
 INCLUDES=-I./ -I../../common/
 OBJ=obj
