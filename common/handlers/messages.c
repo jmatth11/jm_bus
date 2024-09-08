@@ -11,6 +11,10 @@
 #define JM_BUS_UTF8_BYTE_LEN 4
 #endif
 
+#ifndef JM_BUS_LARGE_MSG_LIMIT
+#define JM_BUS_LARGE_MSG_LIMIT (1l<<32)
+#endif
+
 static uint8_t read_buffer[BUFSIZ];
 
 static bool read_all_raw_bytes(int socket, byte_array *out) {
@@ -28,6 +32,10 @@ static bool read_all_raw_bytes(int socket, byte_array *out) {
         free_byte_array(&byte_buffer);
         return false;
       }
+    }
+    if (byte_buffer.len >= JM_BUS_LARGE_MSG_LIMIT) {
+      error_log("client %d: reached or exceeded large message limit %zu.\n", socket, JM_BUS_LARGE_MSG_LIMIT);
+      break;
     }
   } while (n == BUFSIZ);
   *out = byte_buffer;
