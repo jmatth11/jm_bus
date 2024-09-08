@@ -32,7 +32,7 @@ $(OBJ)/%-debug.o: %.c
 .PHONY: archive
 archive: $(OBJECTS)
 	@mkdir -p $(ARCHIVE_DIR)
-	gcc -shared -fPIC -o $((RCHIVE_DIR)/$(ARCHIVE_NAME).so $^ $(LIBS)
+	gcc -shared -fPIC -o $(ARCHIVE_DIR)/$(ARCHIVE_NAME).so $^ $(LIBS)
 	ar -r $(ARCHIVE_DIR)/$(ARCHIVE_NAME).a $^
 
 .PHONY: archive-debug
