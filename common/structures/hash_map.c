@@ -25,13 +25,8 @@ struct hash_map {
   pthread_mutex_t mutex;
 };
 
-static int fast_mod(int hash, int cap) {
-  // fast approximate modulo-like operation
-  int even_cap = (1 & cap) ? (cap +1) : cap;
-  int mod = (hash & even_cap);
-  mod += (1 & hash);
-  if (mod >= cap) mod -= cap;
-  return mod;
+static int mod(int hash, int cap) {
+  return hash % cap;
 }
 
 static bool hash_map_remove_entry(map_entry_array *arr, size_t idx) {
@@ -122,7 +117,7 @@ void hash_map_destroy(struct hash_map *hm) {
 bool hash_map_get(struct hash_map *hm, const char *key, int_array *out) {
   pthread_mutex_lock(&hm->mutex);
   int hash = hash_from_str(key);
-  int idx = fast_mod(hash, hm->entries.cap);
+  int idx = mod(hash, hm->entries.cap);
   size_t key_len = strlen(key);
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
@@ -149,7 +144,7 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
   pthread_mutex_lock(&hm->mutex);
   bool result = true;
   int hash = hash_from_str(key);
-  int idx = fast_mod(hash, hm->entries.cap);
+  int idx = mod(hash, hm->entries.cap);
   size_t key_len = strlen(key);
   bool exists = false;
   map_entry_array *row = &hm->entries.map_data[idx];
@@ -184,7 +179,7 @@ bool hash_map_set(struct hash_map *hm, const char *key, int value) {
 bool hash_map_remove(struct hash_map* hm, const char *key) {
   pthread_mutex_lock(&hm->mutex);
   int hash = hash_from_str(key);
-  int idx = fast_mod(hash, hm->entries.cap);
+  int idx = mod(hash, hm->entries.cap);
   size_t key_len = strlen(key);
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
@@ -215,7 +210,7 @@ bool hash_map_remove(struct hash_map* hm, const char *key) {
 bool hash_map_remove_value(struct hash_map* hm, const char *key, const int value) {
   pthread_mutex_lock(&hm->mutex);
   int hash = hash_from_str(key);
-  int idx = fast_mod(hash, hm->entries.cap);
+  int idx = mod(hash, hm->entries.cap);
   size_t key_len = strlen(key);
   map_entry_array *row = &hm->entries.map_data[idx];
   if (row->map_entry_data == NULL) {
