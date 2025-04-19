@@ -18,7 +18,7 @@ The project contains 3 programs and a shared library.
 I've only tested on Ubuntu currently.
 
 - -std=C11
-- `https://github.com/jmatth11/array_template.git` <- clone inside `deps/`
+- `https://github.com/jmatth11/cstd.git` <- clone inside `deps/`
 
 ## Building
 
