@@ -1,8 +1,6 @@
 #ifndef JM_BUS_STATE_HANDLER_H
 #define JM_BUS_STATE_HANDLER_H
 
-#include "types/array_types.h"
-
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <sys/cdefs.h>

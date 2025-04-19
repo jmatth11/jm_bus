@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/cdefs.h>
-#include "types/message.h"
+#include "types/array_types.h"
 
 __BEGIN_DECLS
 

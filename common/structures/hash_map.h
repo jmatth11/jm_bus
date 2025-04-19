@@ -24,7 +24,7 @@ struct hash_map * hash_map_create(size_t) __THROWNL;
  *
  * @param[out] hm The hash map.
  */
-void hash_map_destroy(struct hash_map *) __THROWNL __nonnull((1));
+void hash_map_destroy(struct hash_map **) __THROWNL __nonnull((1));
 
 /**
  * Get an entry's value by the given key if it exists.

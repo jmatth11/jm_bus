@@ -19,7 +19,7 @@ void convert_n_utf8_to_64bit(uint8_t *buf, size_t n, size_t *out) {
 
 void read_byte_array(uint8_t *buf, byte_array *arr) {
   for (int i = 0; i < arr->cap; ++i) {
-    if (!insert_byte_array(arr, buf[i])) {
+    if (!byte_array_insert(arr, buf[i])) {
       error_log("error inserting byte.\n");
     }
   }
@@ -28,12 +28,13 @@ void read_byte_array(uint8_t *buf, byte_array *arr) {
 bool str_to_byte_array(const char *str, byte_array *out) {
   byte_array local;
   size_t str_len = strlen(str);
-  if (!init_byte_array(&local, str_len)) {
+  if (!byte_array_init(&local, str_len)) {
     error_log("str_to_byte_array init_byte_array failed.\n");
     return false;
   }
   for (int i = 0; i < str_len; ++i) {
-    if (!insert_byte_array(&local, str[i])) {
+    if (!byte_array_insert(&local, str[i])) {
+      byte_array_free(&local);
       error_log("str_to_byte_array insert byte failed.\n");
       return false;
     }
@@ -43,7 +44,7 @@ bool str_to_byte_array(const char *str, byte_array *out) {
 }
 
 char* byte_array_to_str(byte_array *arr) {
-  char *result = malloc(sizeof(char)*arr->len + 1);
+  char *result = malloc((sizeof(char)*arr->len) + 1);
   if (result == NULL) return result;
   memcpy(result, arr->byte_data, arr->len);
   result[arr->len] = '\0';

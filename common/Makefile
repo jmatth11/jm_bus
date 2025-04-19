@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-Wall -std=c11
 PFLAGS=-DDEBUG=1
 LIBS=-lm
-INCLUDES=-I../deps/ -I.
+INCLUDES=-I../deps/cstd/headers -I.
 OBJ=obj
 BIN=bin
 CLIENT_SOURCES=handlers/messages.c helpers/bytes.c helpers/log.c helpers/socket.c handlers/client.c

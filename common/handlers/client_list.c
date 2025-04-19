@@ -4,6 +4,7 @@
 #include "types/array_types.h"
 #include "types/client.h"
 #include <stdlib.h>
+#include <unistd.h>
 
 static bool client_metadata_array_remove(struct client_list *cl, int idx) {
   bool result = array_remove_item(&cl->metadata, idx);
@@ -31,11 +32,11 @@ static bool client_list_remove_by_idx(struct client_list *cl, int idx) {
 
 
 bool client_list_init(struct client_list *cl) {
-  if (!init_pollfd_array(&cl->fds, 100)) {
+  if (!pollfd_array_init(&cl->fds, 100)) {
     error_log("error initializing poll file descriptors.\n");
     return false;
   }
-  if (!init_client_metadata_array(&cl->metadata, 100)) {
+  if (!client_metadata_array_init(&cl->metadata, 100)) {
     error_log("error initializing client metadata.\n");
     return false;
   }
@@ -53,7 +54,7 @@ bool client_list_add(struct client_list *cl, int client_socket) {
     .events = POLLIN,
     .revents = 0,
   };
-  if (!insert_pollfd_array(&cl->fds, local_pollfd)) {
+  if (!pollfd_array_insert(&cl->fds, local_pollfd)) {
     error_log("error added poll file descriptor to array.\n");
     pthread_mutex_unlock(&cl->mutex);
     return false;
@@ -64,7 +65,7 @@ bool client_list_add(struct client_list *cl, int client_socket) {
     pthread_mutex_unlock(&cl->mutex);
     return false;
   }
-  if (!insert_client_metadata_array(&cl->metadata, metadata)) {
+  if (!client_metadata_array_insert(&cl->metadata, metadata)) {
     error_log("error adding metadata to client list.\n");
     pthread_mutex_unlock(&cl->mutex);
     return false;
@@ -98,7 +99,7 @@ bool client_list_get(struct client_list *cl, int client_socket, struct pollfd *f
   bool found = false;
   struct pollfd local;
   for (int i = 0; i < cl->fds.len; ++i) {
-    get_pollfd_array(&cl->fds, i, &local);
+    pollfd_array_get(&cl->fds, i, &local);
     if (local.fd == client_socket) {
       *fd = local;
       found = true;
@@ -125,7 +126,7 @@ int client_list_get_idx(struct client_list *cl, int client_socket) {
   struct pollfd local;
   int idx = -1;
   for (int i = 0; i < cl->fds.len; ++i) {
-    get_pollfd_array(&cl->fds, i, &local);
+    pollfd_array_get(&cl->fds, i, &local);
     if (local.fd == client_socket) {
       idx = i;
       break;
@@ -146,19 +147,19 @@ bool client_list_close_connections(struct client_list *cl) {
 }
 
 void client_list_free(struct client_list *cl) {
-  free_pollfd_array(&cl->fds);
-  free_client_metadata_array(&cl->metadata);
+  pollfd_array_free(&cl->fds);
+  client_metadata_array_free(&cl->metadata);
   pthread_mutex_destroy(&cl->mutex);
 }
 
 bool client_metadata_init(struct client_metadata *metadata) {
-  return init_str_array(&metadata->topics, 2);
+  return str_array_init(&metadata->topics, 2);
 }
 
 void client_metadata_free(struct client_metadata *metadata) {
   for (int i = 0; i < metadata->topics.len; ++i) {
     free(metadata->topics.str_data[i]);
   }
-  free_str_array(&metadata->topics);
+  str_array_free(&metadata->topics);
 }
 

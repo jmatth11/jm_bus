@@ -1,7 +1,6 @@
 #include "handlers/client.h"
 #include "handlers/messages.h"
 #include "helpers/bytes.h"
-#include "types/array_types.h"
 #include "types/client.h"
 #include "types/message.h"
 #include <netinet/in.h>
@@ -12,8 +11,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <errno.h>
 
 int main(int argc, const char **argv) {
   struct client client;
@@ -46,7 +43,7 @@ int main(int argc, const char **argv) {
     // done with message, free it
     message_free(local_msg);
   }
-  free_message_array(&msgs);
+  message_array_free(&msgs);
   client_free(&client);
   return 0;
 }

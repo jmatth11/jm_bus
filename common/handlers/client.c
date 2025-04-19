@@ -7,6 +7,7 @@
 #include "types/message.h"
 #include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 bool client_init(struct client *c, struct sockaddr_in *addr) {
   if (addr == NULL) {
@@ -69,10 +70,10 @@ bool client_publish(struct client *c, char *topic, byte_array msg) {
   }
   if (!prepare_and_send_message(c->socket, &buf)) {
     error_log("publish prepare_and_send_message failed.\n");
-    free_byte_array(&buf.topic);
+    byte_array_free(&buf.topic);
     return false;
   }
-  free_byte_array(&buf.topic);
+  byte_array_free(&buf.topic);
   return true;
 }
 

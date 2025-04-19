@@ -9,7 +9,7 @@
 #include "types/client.h"
 #include "types/state.h"
 #include <string.h>
-
+#include <unistd.h>
 
 bool server_state_init(struct server_state *s, struct sockaddr_in *addr) {
   s->running = true;
@@ -58,14 +58,14 @@ bool server_state_add_client_topic(struct server_state *s, const char *topic, in
       return true;
     }
   }
-  char *md_topic = malloc(sizeof(char)*topic_len + 1);
+  char *md_topic = malloc((sizeof(char)*topic_len) + 1);
   strncpy(md_topic, topic, topic_len);
   md_topic[topic_len] = '\0';
-  if (!insert_str_array(&metadata->topics, md_topic)) {
+  if (!str_array_insert(&metadata->topics, md_topic)) {
     error_log("copying topic to metadata failed.\n");
     return false;
   }
-  return hash_map_set(s->topics, topic, client_sock);
+  return hash_map_set(s->topics, md_topic, client_sock);
 }
 
 bool server_state_add_client(struct server_state *s, int client_sock) {
@@ -113,7 +113,7 @@ bool server_state_free(struct server_state *s) {
   }
   client_list_free(&s->clients);
   server_handler_close(&s->server);
-  hash_map_destroy(s->topics);
-  thread_pool_destroy(s->pool);
+  hash_map_destroy(&s->topics);
+  thread_pool_destroy(&s->pool);
   return true;
 }
