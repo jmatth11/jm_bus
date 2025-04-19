@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-Wall -std=c11
 LIBS=-lm -L../../common/lib/ -ljm_bus
 LIBS_DEBUG=-lm -L../../common/lib/ -ljm_bus-debug
-INCLUDES=-I./ -I../../common/
+INCLUDES=-I./ -I../../common/ -I../../deps/cstd/headers
 OBJ=obj
 BIN=bin
 SOURCES=$(shell find . -name '*.c' -not -path './plugins/*' -not -path './deps/*')

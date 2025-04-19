@@ -1,5 +1,3 @@
-#include "../deps/array_template/array_template.h"
-
 #include "helpers/log.h"
 
 #include "client_list.h"
@@ -51,7 +49,7 @@ void accept_messages(struct server_state *state) {
   if (client_sock != -1) {
     info_log("adding client %d\n", client_sock);
     byte_array buf;
-    if (!init_byte_array(&buf, 20)) {
+    if (!byte_array_init(&buf, 20)) {
       error_detailed("connection message for client %d failed.\n", client_sock);
       return;
     }
@@ -73,7 +71,7 @@ void accept_messages(struct server_state *state) {
 
 void process_poll_events(struct server_state *state) {
   int_array marked;
-  init_int_array(&marked, 10);
+  int_array_init(&marked, 10);
   for (int i = 0; i < state->clients.fds.len; ++i) {
     struct pollfd *local_c = &state->clients.fds.pollfd_data[i];
 #ifdef DEBUG
@@ -86,14 +84,14 @@ void process_poll_events(struct server_state *state) {
     } else {
       if (local_c->revents & (POLLHUP | POLLERR)) {
           info_log("client %d disconnected\n", local_c->fd);
-          insert_int_array(&marked, local_c->fd);
+          int_array_insert(&marked, local_c->fd);
       } else if (local_c->revents & POLLIN) {
         message_array msgs = message_array_generate_from_client(local_c->fd);
         if (msgs.len == 0) {
           info_log("client %d messaged with 0 recv -- disconnecting\n", local_c->fd);
           message_array_free_list(msgs);
-          free_message_array(&msgs);
-          insert_int_array(&marked, local_c->fd);
+          message_array_free(&msgs);
+          int_array_insert(&marked, local_c->fd);
           continue;
         }
         struct message_event event = {
@@ -104,7 +102,7 @@ void process_poll_events(struct server_state *state) {
         thread_pool_start_job(state->pool, process_messages, event);
       } else if (local_c->revents & POLLNVAL) {
         error_log("client %d had an invalid polling state -- disconnecting.\n", local_c->fd);
-        insert_int_array(&marked, local_c->fd);
+        int_array_insert(&marked, local_c->fd);
       }
     }
   }
@@ -150,7 +148,7 @@ void* process_messages(void *ctx) {
               byte_array err_msg;
               if (messages_gen_error("error subscribing to topic", &err_msg) != 0) {
                 send_message(job->event.from, err_msg);
-                free_byte_array(&err_msg);
+                byte_array_free(&err_msg);
               } else {
                 error_log("critical error in publish.\n");
               }
@@ -166,7 +164,7 @@ void* process_messages(void *ctx) {
             byte_array err_msg;
             if (messages_gen_error("error publishing message to topic", &err_msg) != 0) {
               send_message(job->event.from, err_msg);
-              free_byte_array(&err_msg);
+              byte_array_free(&err_msg);
             } else {
               error_log("critical error in publish.\n");
             }
@@ -183,7 +181,7 @@ void* process_messages(void *ctx) {
       free(topic_name);
     }
     message_array_free_list(job->event.msgs);
-    free_message_array(&job->event.msgs);
+    message_array_free(&job->event.msgs);
     pthread_mutex_unlock(&job->mutex);
     atomic_store(&job->occupied, false);
   }

@@ -30,7 +30,7 @@ bool prepare_and_send_message(int socket, struct message *msg) {
     exit(1);
     result = false;
   }
-  free_byte_array(&data);
+  byte_array_free(&data);
   return result;
 }
 

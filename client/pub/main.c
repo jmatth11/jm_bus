@@ -38,7 +38,7 @@ int main(int argc, const char **argv) {
     exit(1);
   }
   sleep(1);
-  free_byte_array(&msg);
+  byte_array_free(&msg);
   client_free(&client);
   return 0;
 }

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 bool server_handler_init(struct server_info *si, int __type, int __protocol) {
   si->socket = socket(si->addr.sin_family, __type, __protocol);

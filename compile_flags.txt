@@ -1,5 +1,6 @@
 -I.
 -I./common/
+-I./deps/cstd/headers
 -Wall
 -std=c11
 -lm

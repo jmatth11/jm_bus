@@ -19,7 +19,7 @@ static uint8_t read_buffer[BUFSIZ];
 
 static bool read_all_raw_bytes(int socket, byte_array *out) {
   byte_array byte_buffer;
-  if (!init_byte_array(&byte_buffer, BUFSIZ)) {
+  if (!byte_array_init(&byte_buffer, BUFSIZ)) {
     error_log("init byte array from client failed.\n");
     return false;
   }
@@ -27,9 +27,9 @@ static bool read_all_raw_bytes(int socket, byte_array *out) {
   do {
     n = recv(socket, read_buffer, BUFSIZ, 0);
     for (int i = 0; i < n; ++i) {
-      if (!insert_byte_array(&byte_buffer, read_buffer[i])) {
+      if (!byte_array_insert(&byte_buffer, read_buffer[i])) {
         error_log("generating byte array from client failed.\n");
-        free_byte_array(&byte_buffer);
+        byte_array_free(&byte_buffer);
         return false;
       }
     }
@@ -60,7 +60,7 @@ size_t messages_read(const byte_array msg, struct message *out) {
   if (msg.len <= (cur_idx + (JM_BUS_UTF8_BYTE_LEN - 1))) return 0;
   size_t topic_len = 0;
   convert_n_utf8_to_64bit(&msg.byte_data[cur_idx], JM_BUS_UTF8_BYTE_LEN, &topic_len);
-  if (!init_byte_array(&local.topic, topic_len)) {
+  if (!byte_array_init(&local.topic, topic_len)) {
     error_log("error initializing topic.\n");
     message_free(&local);
     return 0;
@@ -79,7 +79,7 @@ size_t messages_read(const byte_array msg, struct message *out) {
   }
   size_t body_len = 0;
   convert_n_utf8_to_64bit(&msg.byte_data[cur_idx], JM_BUS_UTF8_BYTE_LEN, &body_len);
-  if (!init_byte_array(&local.body, body_len)) {
+  if (!byte_array_init(&local.body, body_len)) {
     error_log("error initializing body.\n");
     message_free(&local);
     return 0;
@@ -106,13 +106,13 @@ size_t messages_write(const struct message *msg, byte_array *out) {
   size_t msg_len = (1 + (JM_BUS_UTF8_BYTE_LEN * 2)) + msg->topic.len + msg->body.len;
   byte_array local;
   size_t cur_idx = 0;
-  if (!init_byte_array(&local, msg_len)) {
+  if (!byte_array_init(&local, msg_len)) {
     error_log("error initializing message.\n");
     return 0;
   }
-  if (!insert_byte_array(&local, msg->type)) {
+  if (!byte_array_insert(&local, msg->type)) {
     error_log("error inserting type byte.\n");
-    free_byte_array(&local);
+    byte_array_free(&local);
     return 0;
   }
   ++cur_idx;
@@ -120,9 +120,9 @@ size_t messages_write(const struct message *msg, byte_array *out) {
   cur_idx += JM_BUS_UTF8_BYTE_LEN;
   local.len = cur_idx;
   for (int i = 0; i < msg->topic.len; ++i) {
-    if (!insert_byte_array(&local, msg->topic.byte_data[i])) {
+    if (!byte_array_insert(&local, msg->topic.byte_data[i])) {
       error_log("error with insert_byte_array for topic.\n");
-      free_byte_array(&local);
+      byte_array_free(&local);
       return 0;
     }
   }
@@ -131,9 +131,9 @@ size_t messages_write(const struct message *msg, byte_array *out) {
   cur_idx += JM_BUS_UTF8_BYTE_LEN;
   local.len = cur_idx;
   for (int i = 0; i < msg->body.len; ++i) {
-    if (!insert_byte_array(&local, msg->body.byte_data[i])) {
+    if (!byte_array_insert(&local, msg->body.byte_data[i])) {
       error_log("error with insert_byte_array for body.\n");
-      free_byte_array(&local);
+      byte_array_free(&local);
       return 0;
     }
   }
@@ -169,13 +169,13 @@ size_t messages_gen_error(char *err, byte_array *out) {
   struct message msg = {
     .type = ERROR,
   };
-  if (!init_byte_array(&msg.body, 20)) {
+  if (!byte_array_init(&msg.body, 20)) {
     error_log("error generating body for error message.\n");
     return 0;
   }
   size_t n = strlen(err);
   for (int i = 0; i < n; ++i) {
-    if (!insert_byte_array(&msg.body, err[i])) {
+    if (!byte_array_insert(&msg.body, err[i])) {
       error_log("error inserting character for error message.\n");
     }
   }
@@ -185,7 +185,7 @@ size_t messages_gen_error(char *err, byte_array *out) {
 }
 
 char * message_get_topic(const struct message *msg) {
-  char *topic = malloc(sizeof(char)*msg->topic.len + 1);
+  char *topic = malloc((sizeof(char)*msg->topic.len) + 1);
   memcpy(topic, msg->topic.byte_data, msg->topic.len);
   topic[msg->topic.len] = '\0';
   return topic;
@@ -193,14 +193,14 @@ char * message_get_topic(const struct message *msg) {
 
 message_array message_array_generate_from_client(int client_sock) {
   message_array result;
-  if (!init_message_array(&result, 2)) {
+  if (!message_array_init(&result, 2)) {
     error_log("init message array from client failed.\n");
     return result;
   }
   byte_array byte_buffer;
   if (!read_all_raw_bytes(client_sock, &byte_buffer)) {
     error_log("message_array_generate_from_client error reading all bytes.\n");
-    free_message_array(&result);
+    message_array_free(&result);
     return result;
   }
   size_t n = 0;
@@ -218,15 +218,15 @@ message_array message_array_generate_from_client(int client_sock) {
       byte_buffer.byte_data = &byte_buffer.byte_data[read_n];
       byte_buffer.len -= read_n;
     }
-    if (!insert_message_array(&result, local_c)) {
+    if (!message_array_insert(&result, local_c)) {
       error_log("failed to insert message from client.\n");
-      free_byte_array(&byte_buffer);
+      byte_array_free(&byte_buffer);
       message_array_free_list(result);
-      free_message_array(&result);
+      message_array_free(&result);
       return result;
     }
   }
-  free_byte_array(&byte_buffer);
+  byte_array_free(&byte_buffer);
   return result;
 }
 
@@ -239,9 +239,9 @@ void message_array_free_list(message_array msgs) {
 
 void message_free(struct message *msg) {
   if (msg->topic.byte_data != NULL) {
-    free_byte_array(&msg->topic);
+    byte_array_free(&msg->topic);
   }
   if (msg->body.byte_data != NULL) {
-    free_byte_array(&msg->body);
+    byte_array_free(&msg->body);
   }
 }

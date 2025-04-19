@@ -56,7 +56,7 @@ bool thread_pool_start_job(struct thread_pool*, thread_func, struct message_even
  *
  * @param[out] pool The thread pool.
  */
-void thread_pool_destroy(struct thread_pool*) __THROWNL __nonnull((1));
+void thread_pool_destroy(struct thread_pool**) __THROWNL __nonnull((1));
 
 __END_DECLS
 

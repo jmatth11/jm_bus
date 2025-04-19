@@ -1,7 +1,7 @@
 #ifndef JM_BUS_ARRAY_TYPES_H
 #define JM_BUS_ARRAY_TYPES_H
 
-#include "../deps/array_template/array_template.h"
+#include "array_template.h"
 
 #include <stdint.h>
 #include <sys/cdefs.h>

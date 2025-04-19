@@ -1,4 +1,4 @@
-#include "../deps/array_template/array_template.h"
+#include "array_template.h"
 
 #include "thread_pool.h"
 
@@ -21,7 +21,7 @@ struct thread_pool* thread_pool_create(size_t n) {
     error_log("malloc thread pool failed.\n");
     return NULL;
   }
-  if (!init_thread_job_array(&pool->threads, n)) {
+  if (!thread_job_array_init(&pool->threads, n)) {
     error_log("initializing thread job array failed.\n");
     free(pool);
     return NULL;
@@ -49,7 +49,7 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
     pthread_mutex_lock(&pool->lock);
     struct thread_job local = {};
     atomic_store(&local.occupied, true);
-    insert_thread_job_array(&pool->threads, local);
+    thread_job_array_insert(&pool->threads, local);
     struct thread_job *ref = &pool->threads.thread_job_data[pool->threads.len -1];
     ref->event = event;
     if (pthread_cond_init(&ref->cond, NULL) != 0) {
@@ -79,18 +79,22 @@ bool thread_pool_start_job(struct thread_pool *pool, thread_func callback, struc
   return true;
 }
 
-void thread_pool_destroy(struct thread_pool *pool) {
-  pthread_mutex_lock(&pool->lock);
-  for (int i = 0; i < pool->threads.len; ++i) {
-    struct thread_job *job = &pool->threads.thread_job_data[i];
+void thread_pool_destroy(struct thread_pool **pool) {
+  if (*pool == NULL) {
+    return;
+  }
+  pthread_mutex_lock(&(*pool)->lock);
+  for (int i = 0; i < (*pool)->threads.len; ++i) {
+    struct thread_job *job = &(*pool)->threads.thread_job_data[i];
     job->event.from = -1;
     pthread_cond_signal(&job->cond);
     pthread_join(job->thread_fd, NULL);
     pthread_cond_destroy(&job->cond);
     pthread_mutex_destroy(&job->mutex);
   }
-  free_thread_job_array(&pool->threads);
-  pthread_mutex_unlock(&pool->lock);
-  pthread_mutex_destroy(&pool->lock);
-  free(pool);
+  thread_job_array_free(&(*pool)->threads);
+  pthread_mutex_unlock(&(*pool)->lock);
+  pthread_mutex_destroy(&(*pool)->lock);
+  free(*pool);
+  *pool = NULL;
 }
