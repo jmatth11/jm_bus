@@ -1,0 +1,29 @@
+name: Build-Step
+
+on: push
+
+jobs:
+  build-step:
+    name: Perform Normal Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Deps
+        run: ./install_deps.sh
+
+      - name: Build Project
+        run: |
+          cd common
+          make archive
+          make archive-client
+          cd -
+          cd server
+          make
+          cd -
+          cd client/pub
+          make
+          cd ../sub
+          make
+
